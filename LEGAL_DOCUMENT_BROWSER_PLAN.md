@@ -190,26 +190,19 @@ Output structure:
 ```typescript
 // Automated test that can run independently
 async function testIndexBuilder() {
-  // 1. Create test data directory with 3 sample JSON files
-  const testData = {
-    '100.json': { id: 100, case_name: 'Test v. Sample', court: 'test', date_filed: '2023-01-01' },
-    '200.json': { id: 200, case_name: 'Demo v. Example', court: 'demo', date_filed: '2023-02-01' },
-    '300.json': { id: 300, case_name: 'Mock v. Stub', court: 'test', date_filed: '2023-03-01' }
-  };
-  
-  // 2. Run buildIndices with test config
+  // 1. Use sample-data directory for testing
   await buildIndices({
-    jsonDir: './test-data/docket-data',
+    jsonDir: './sample-data/docket-data',
     outputDir: './test-output',
-    pdfBaseDir: './test-data/sata'
+    pdfBaseDir: './sample-data/sata'
   });
   
-  // 3. Verify outputs
+  // 2. Verify outputs
   const caseIndex = JSON.parse(await fs.readFile('./test-output/case-index.json', 'utf-8'));
   
-  console.assert(caseIndex.cases.length === 3, 'Should have 3 cases');
-  console.assert(caseIndex.courts.length === 2, 'Should have 2 unique courts');
-  console.assert(fs.existsSync('./test-output/documents/100.json'), 'Should create document index');
+  console.assert(caseIndex.cases.length === 10, 'Should have 10 cases');
+  console.assert(caseIndex.courts.length >= 8, 'Should have multiple courts');
+  console.assert(fs.existsSync('./test-output/documents/14560346.json'), 'Should create document index');
   
   console.log('✅ Phase 1: Index builder working correctly');
 }
@@ -218,9 +211,9 @@ async function testIndexBuilder() {
 ```
 
 **Manual Test:**
-1. Run `npm run build:index` with a subset of data (e.g., first 10 JSON files)
-2. Check that `public/data/case-index.json` exists and contains expected structure
-3. Verify `public/data/documents/` contains corresponding document files
+1. Run `npm run build:index:sample` to build from sample-data
+2. Check that `public/data/case-index.json` exists and contains 10 cases
+3. Verify `public/data/documents/` contains 10 JSON files
 4. Open case-index.json and verify it has cases, courts, and dateRange fields
 
 ### Phase 2: Vite Configuration
@@ -622,21 +615,43 @@ test('CaseSearch renders and dispatches actions', () => {
 
 ## Build & Run Process
 
-1. **Initial Setup**
+### Development with Sample Data
+
+1. **Sample Data Setup**
+   - The `sample-data/` directory contains 10 representative JSON files and PDFs for one case
+   - Structure mirrors production: `sample-data/docket-data/` and `sample-data/sata/recap/`
+   - Use this for development to avoid handling 34K+ files initially
+
+2. **Initial Setup**
 ```bash
-npm run build:index  # Run buildIndex.ts to create indices
-npm run dev          # Start Vite dev server
+# For development with sample data
+npm run build:index:sample  # Build indices from sample-data/
+npm run dev                 # Start Vite dev server
+
+# For production with full data
+npm run build:index        # Build indices from data/
+npm run dev               # Start Vite dev server
 ```
 
-2. **Index Builder Package.json Script**
+3. **Index Builder Package.json Scripts**
 ```json
 {
   "scripts": {
     "dev": "vite",
-    "build:index": "tsx scripts/buildIndex.ts",
+    "build:index": "tsx scripts/buildIndex.ts --data-dir=./data",
+    "build:index:sample": "tsx scripts/buildIndex.ts --data-dir=./sample-data",
     "typecheck": "tsc --noEmit"
   }
 }
+```
+
+4. **Environment Configuration**
+```typescript
+// config/dataConfig.ts
+export const DATA_CONFIG = {
+  dataDir: process.env.USE_SAMPLE_DATA === 'true' ? './sample-data' : './data',
+  publicDataDir: './public/data'
+};
 ```
 
 ## Performance Optimizations
