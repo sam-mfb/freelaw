@@ -11,11 +11,11 @@ export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
     typeof doc.id === 'number' &&
     typeof doc.document_number === 'string' &&
     typeof doc.is_available === 'boolean' &&
-    (doc.filepath_local === undefined || typeof doc.filepath_local === 'string') &&
-    (doc.description === undefined || typeof doc.description === 'string') &&
+    (doc.filepath_local === undefined || doc.filepath_local === null || typeof doc.filepath_local === 'string') &&
+    (doc.description === undefined || doc.description === null || typeof doc.description === 'string') &&
     (doc.page_count === undefined || doc.page_count === null || typeof doc.page_count === 'number') &&
     (doc.file_size === undefined || doc.file_size === null || typeof doc.file_size === 'number') &&
-    (doc.sha1 === undefined || typeof doc.sha1 === 'string')
+    (doc.sha1 === undefined || doc.sha1 === null || typeof doc.sha1 === 'string')
   );
 }
 
@@ -26,7 +26,7 @@ export function isRawDocketEntry(obj: unknown): obj is RawDocketEntry {
   
   const entry = obj as Record<string, unknown>;
   
-  if (typeof entry.entry_number !== 'number') {
+  if (typeof entry.id !== 'number') {
     return false;
   }
   
@@ -67,7 +67,7 @@ export function isRawCaseData(obj: unknown): obj is RawCaseData {
   ];
   
   for (const field of optionalStringFields) {
-    if (caseData[field] !== undefined && typeof caseData[field] !== 'string') {
+    if (caseData[field] !== undefined && caseData[field] !== null && typeof caseData[field] !== 'string') {
       return false;
     }
   }

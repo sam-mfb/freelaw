@@ -71,7 +71,7 @@ function extractDocuments(caseData: RawCaseData): Document[] {
           if (doc.is_available && doc.filepath_local) {
             documents.push({
               id: doc.id,
-              entryNumber: entry.entry_number,
+              entryNumber: entry.id,
               documentNumber: doc.document_number,
               description: doc.description || '',
               dateFiled: entry.date_entered || '',

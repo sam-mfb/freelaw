@@ -28,7 +28,7 @@ export interface RawRecapDocument {
 }
 
 export interface RawDocketEntry {
-  entry_number: number;
+  id: number;
   description?: string;
   date_entered?: string;
   recap_documents?: RawRecapDocument[];
