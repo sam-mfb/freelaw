@@ -4,6 +4,7 @@ import { loadCaseIndex, setSearchTerm, setCourtFilter } from '../casesSlice';
 import { loadDocuments, setDocumentSearch } from '../documentsSlice';
 import { toggleSidebar, setDocumentView } from '../uiSlice';
 import { createAppStore, type AppStore } from '../createAppStore';
+import type { AppServices } from '../../services/types';
 
 const mockCaseIndex = {
   cases: [
@@ -60,16 +61,19 @@ const mockDocuments = [
   },
 ];
 
-vi.mock('../../services/dataService', () => ({
-  loadCaseIndex: vi.fn(() => Promise.resolve(mockCaseIndex)),
-  loadCaseDocuments: vi.fn(() => Promise.resolve(mockDocuments)),
-}));
-
 describe('Redux Store', () => {
   let store: AppStore;
+  let mockServices: AppServices;
 
   beforeEach(() => {
-    store = createAppStore();
+    mockServices = {
+      dataService: {
+        loadCaseIndex: vi.fn(() => Promise.resolve(mockCaseIndex)),
+        loadCaseDocuments: vi.fn(() => Promise.resolve(mockDocuments)),
+      },
+    };
+    
+    store = createAppStore(mockServices);
   });
 
   describe('Cases Slice', () => {
@@ -80,6 +84,7 @@ describe('Redux Store', () => {
       expect(state.cases.loading).toBe(false);
       expect(state.cases.index?.cases).toHaveLength(2);
       expect(state.cases.filteredCases).toHaveLength(2);
+      expect(mockServices.dataService.loadCaseIndex).toHaveBeenCalledOnce();
     });
 
     it('should filter cases by search term', async () => {
@@ -109,6 +114,7 @@ describe('Redux Store', () => {
       expect(state.documents.loading).toBe(false);
       expect(state.documents.documents[1]).toHaveLength(2);
       expect(state.documents.currentDocuments).toHaveLength(2);
+      expect(mockServices.dataService.loadCaseDocuments).toHaveBeenCalledWith(1);
     });
 
     it('should filter documents by search term', async () => {

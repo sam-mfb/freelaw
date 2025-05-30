@@ -1,8 +1,8 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { loadCaseIndex as loadCaseIndexService } from '../services/dataService';
 import type { CaseIndex } from '../types/index.types';
 import type { CaseSummary } from '../types/case.types';
+import type { ThunkExtra } from './types';
 
 interface CasesState {
   index: CaseIndex | null;
@@ -34,8 +34,9 @@ const initialState: CasesState = {
   error: null,
 };
 
-export const loadCaseIndex = createAsyncThunk('cases/loadIndex', async () => {
-  return await loadCaseIndexService();
+export const loadCaseIndex = createAsyncThunk('cases/loadIndex', async (_, { extra }) => {
+  const { services } = extra as ThunkExtra;
+  return await services.dataService.loadCaseIndex();
 });
 
 function filterCases(state: CasesState): CaseSummary[] {

@@ -1,7 +1,7 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { loadCaseDocuments as loadCaseDocumentsService } from '../services/dataService';
 import type { Document } from '../types/document.types';
+import type { ThunkExtra } from './types';
 
 interface DocumentsState {
   documents: Record<number, Document[]>;
@@ -21,8 +21,9 @@ const initialState: DocumentsState = {
   error: null,
 };
 
-export const loadDocuments = createAsyncThunk('documents/load', async (caseId: number) => {
-  const docs = await loadCaseDocumentsService(caseId);
+export const loadDocuments = createAsyncThunk('documents/load', async (caseId: number, { extra }) => {
+  const { services } = extra as ThunkExtra;
+  const docs = await services.dataService.loadCaseDocuments(caseId);
   return { caseId, documents: docs };
 });
 
