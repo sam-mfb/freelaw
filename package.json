@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
     "dev:sample": "USE_SAMPLE_DATA=true vite --host 0.0.0.0 --port 3000",
+    "dev:sample:debug": "DEBUG_MIDDLEWARE=true USE_SAMPLE_DATA=true vite --host 0.0.0.0 --port 3000",
     "build": "tsc && vite build",
     "build:index": "vite-node scripts/buildIndex.ts --data-dir=./data",
     "build:index:sample": "vite-node scripts/buildIndex.ts --data-dir=./sample-data",
