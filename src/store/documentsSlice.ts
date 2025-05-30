@@ -1,4 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { loadCaseDocuments as loadCaseDocumentsService } from '../services/dataService';
 import type { Document } from '../types/document.types';
 
@@ -20,21 +21,18 @@ const initialState: DocumentsState = {
   error: null,
 };
 
-export const loadDocuments = createAsyncThunk(
-  'documents/load',
-  async (caseId: number) => {
-    const docs = await loadCaseDocumentsService(caseId);
-    return { caseId, documents: docs };
-  }
-);
+export const loadDocuments = createAsyncThunk('documents/load', async (caseId: number) => {
+  const docs = await loadCaseDocumentsService(caseId);
+  return { caseId, documents: docs };
+});
 
 function filterDocuments(documents: Document[], searchTerm: string): Document[] {
   if (!searchTerm) return documents;
-  
+
   const term = searchTerm.toLowerCase();
-  return documents.filter(d =>
-    d.description.toLowerCase().includes(term) ||
-    d.documentNumber.toLowerCase().includes(term)
+  return documents.filter(
+    (d) =>
+      d.description.toLowerCase().includes(term) || d.documentNumber.toLowerCase().includes(term),
   );
 }
 
@@ -80,3 +78,4 @@ const documentsSlice = createSlice({
 
 export const { setDocumentSearch, clearDocuments, setCurrentDocuments } = documentsSlice.actions;
 export default documentsSlice.reducer;
+

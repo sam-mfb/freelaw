@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 interface UIState {
   sidebarOpen: boolean;
@@ -66,3 +67,4 @@ export const {
 } = uiSlice.actions;
 
 export default uiSlice.reducer;
+
