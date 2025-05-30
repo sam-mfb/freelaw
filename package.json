@@ -10,7 +10,7 @@
     "build:index": "vite-node scripts/buildIndex.ts --data-dir=./data",
     "build:index:sample": "vite-node scripts/buildIndex.ts --data-dir=./sample-data",
     "preview": "vite preview",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint src scripts --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

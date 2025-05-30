@@ -9,29 +9,45 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'serve-data-files',
+      name: 'vite-serve-data-plugin',
       configureServer(server) {
-        server.middlewares.use('/data/docket-data', (req, res, next) => {
+        server.middlewares.use('/data/docket-data', async (req, res, next) => {
           const filePath = path.join(dataRoot, 'docket-data', req.url!);
           const fullPath = path.resolve(filePath);
           
-          if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
-            res.setHeader('Content-Type', 'application/json');
-            fs.createReadStream(fullPath).pipe(res);
-          } else {
+          try {
+            await fs.promises.access(fullPath);
+            const stats = await fs.promises.stat(fullPath);
+            
+            if (stats.isFile()) {
+              res.setHeader('Content-Type', 'application/json');
+              fs.createReadStream(fullPath).pipe(res);
+            } else {
+              res.statusCode = 404;
+              res.end('File not found');
+            }
+          } catch {
             res.statusCode = 404;
             res.end('File not found');
           }
         });
         
-        server.middlewares.use('/data/sata', (req, res, next) => {
+        server.middlewares.use('/data/sata', async (req, res, next) => {
           const filePath = path.join(dataRoot, 'sata', req.url!);
           const fullPath = path.resolve(filePath);
           
-          if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
-            res.setHeader('Content-Type', 'application/pdf');
-            fs.createReadStream(fullPath).pipe(res);
-          } else {
+          try {
+            await fs.promises.access(fullPath);
+            const stats = await fs.promises.stat(fullPath);
+            
+            if (stats.isFile()) {
+              res.setHeader('Content-Type', 'application/pdf');
+              fs.createReadStream(fullPath).pipe(res);
+            } else {
+              res.statusCode = 404;
+              res.end('File not found');
+            }
+          } catch {
             res.statusCode = 404;
             res.end('File not found');
           }
