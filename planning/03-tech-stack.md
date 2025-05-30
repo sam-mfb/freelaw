@@ -3,25 +3,34 @@
 ## Core Technologies
 
 ### TypeScript (Strict Mode)
+
 - All code must be written in TypeScript with strict mode enabled
 - No `any` types allowed - use proper interfaces
 - Type all function parameters and return values
 
-### React 18+
+### React 19+
+
 - Functional components only (no class components)
 - Use hooks for state and effects
 - Components should be in `.tsx` files
+- Use useEffects only for idiomatic patterns
 
 ### Redux Toolkit
+
 - **Required** for state management (not Context API or other solutions)
 - Use `createSlice` for reducers
 - Use `createAsyncThunk` for async operations
 - Typed hooks: `useAppDispatch` and `useAppSelector`
 
 ### Vite
+
 - Development server only (no production build needed)
 - Handles file serving for JSONs and PDFs
 - Hot module replacement for React
+
+## Node
+
+- Use `node-vite` for running typescript node scripts
 
 ## Project Structure
 
@@ -70,7 +79,7 @@ export interface Case {
   // ... etc
 }
 
-// types/document.types.ts  
+// types/document.types.ts
 export interface Document {
   id: number;
   entryNumber: number;
@@ -119,17 +128,17 @@ npm run dev
 
 ```typescript
 // store/index.ts
-import { configureStore } from '@reduxjs/toolkit';
-import casesReducer from './casesSlice';
-import documentsReducer from './documentsSlice';
-import uiReducer from './uiSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import casesReducer from "./casesSlice";
+import documentsReducer from "./documentsSlice";
+import uiReducer from "./uiSlice";
 
 export const store = configureStore({
   reducer: {
     cases: casesReducer,
     documents: documentsReducer,
-    ui: uiReducer
-  }
+    ui: uiReducer,
+  },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
@@ -145,8 +154,9 @@ The Vite config must allow serving files from the data directories:
 export default defineConfig({
   server: {
     fs: {
-      allow: ['..']  // Allow serving outside project root
-    }
-  }
+      allow: [".."], // Allow serving outside project root
+    },
+  },
 });
 ```
+

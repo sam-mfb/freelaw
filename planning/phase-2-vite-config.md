@@ -9,7 +9,7 @@ Set up Vite development server to properly serve the React application, JSON dat
 1. Serve React application on `http://localhost:5173`
 2. Serve JSON index files from `public/data/`
 3. Serve original JSON files from `data/docket-data/` (or `sample-data/`)
-4. Serve PDF files from `data/sata/recap/` (or `sample-data/`)
+4. Serve PDF files from `data/sata/recap/` (or `sample-data/sata/recap/`)
 5. Enable CORS for all file types
 6. Support hot module replacement for React
 
@@ -18,26 +18,26 @@ Set up Vite development server to properly serve the React application, JSON dat
 ### File: `vite.config.ts`
 
 ```typescript
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
-  
+
   server: {
     fs: {
       // Allow serving files outside of project root
-      allow: ['..']
-    }
+      allow: [".."],
+    },
   },
-  
+
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@data': path.resolve(__dirname, './data')
-    }
-  }
+      "@": path.resolve(__dirname, "./src"),
+      "@data": path.resolve(__dirname, "./data"),
+    },
+  },
 });
 ```
 
@@ -75,9 +75,8 @@ Use environment variable to switch data sources:
 
 ```typescript
 // In vite.config.ts or separate config
-const dataRoot = process.env.USE_SAMPLE_DATA === 'true' 
-  ? './sample-data' 
-  : './data';
+const dataRoot =
+  process.env.USE_SAMPLE_DATA === "true" ? "./sample-data" : "./data";
 ```
 
 ## Testing
@@ -89,61 +88,62 @@ const dataRoot = process.env.USE_SAMPLE_DATA === 'true'
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Vite Config Test</title>
-</head>
-<body>
-  <h2>Vite Configuration Test</h2>
-  <div id="test-results"></div>
-  
-  <script type="module">
-    const tests = [
-      { 
-        url: '/data/case-index.json', 
-        desc: 'Index from public/data',
-        check: async (r) => r.ok && (await r.json()).cases
-      },
-      { 
-        url: '/data/documents/14560346.json', 
-        desc: 'Document index',
-        check: async (r) => r.ok && Array.isArray(await r.json())
-      },
-      { 
-        url: '/data/docket-data/14560346.json', 
-        desc: 'Original JSON',
-        check: async (r) => r.ok && (await r.json()).id === 14560346
-      },
-      { 
-        url: '/data/sata/recap/gov.uscourts.kyed.88372/gov.uscourts.kyed.88372.1.0.pdf', 
-        desc: 'PDF file',
-        check: async (r) => r.ok && r.headers.get('content-type').includes('pdf')
+  <head>
+    <title>Vite Config Test</title>
+  </head>
+  <body>
+    <h2>Vite Configuration Test</h2>
+    <div id="test-results"></div>
+
+    <script type="module">
+      const tests = [
+        {
+          url: "/data/case-index.json",
+          desc: "Index from public/data",
+          check: async (r) => r.ok && (await r.json()).cases,
+        },
+        {
+          url: "/data/documents/14560346.json",
+          desc: "Document index",
+          check: async (r) => r.ok && Array.isArray(await r.json()),
+        },
+        {
+          url: "/data/docket-data/14560346.json",
+          desc: "Original JSON",
+          check: async (r) => r.ok && (await r.json()).id === 14560346,
+        },
+        {
+          url: "/data/sata/recap/gov.uscourts.kyed.88372/gov.uscourts.kyed.88372.1.0.pdf",
+          desc: "PDF file",
+          check: async (r) =>
+            r.ok && r.headers.get("content-type").includes("pdf"),
+        },
+      ];
+
+      const results = document.getElementById("test-results");
+
+      for (const test of tests) {
+        try {
+          const response = await fetch(test.url);
+          const passed = await test.check(response);
+          const status = passed ? "✅" : "❌";
+          results.innerHTML += `<p>${status} ${test.desc}: ${response.status}</p>`;
+        } catch (e) {
+          results.innerHTML += `<p>❌ ${test.desc}: ${e.message}</p>`;
+        }
       }
-    ];
-    
-    const results = document.getElementById('test-results');
-    
-    for (const test of tests) {
-      try {
-        const response = await fetch(test.url);
-        const passed = await test.check(response);
-        const status = passed ? '✅' : '❌';
-        results.innerHTML += `<p>${status} ${test.desc}: ${response.status}</p>`;
-      } catch (e) {
-        results.innerHTML += `<p>❌ ${test.desc}: ${e.message}</p>`;
-      }
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
 ```
 
 2. Start server: `npm run dev`
-3. Navigate to `http://localhost:5173/test-vite-setup.html`
+3. Navigate to `http://localhost:3000/test-vite-setup.html`
 4. All tests should show ✅
 
 ## Success Criteria
 
-- [ ] React app loads at localhost:5173
+- [ ] React app loads at localhost:3000
 - [ ] Can fetch case-index.json from /data/
 - [ ] Can fetch document JSON files from /data/documents/
 - [ ] Can fetch original JSON files from /data/docket-data/
@@ -156,8 +156,8 @@ const dataRoot = process.env.USE_SAMPLE_DATA === 'true'
 ```json
 {
   "scripts": {
-    "dev": "vite",
-    "dev:sample": "USE_SAMPLE_DATA=true vite"
+    "dev": "vite --host 0.0.0.0 --port 3000",
+    "dev:sample": "USE_SAMPLE_DATA=true vite --host 0.0.0.0 --port 3000"
   }
 }
 ```
@@ -168,3 +168,4 @@ const dataRoot = process.env.USE_SAMPLE_DATA === 'true'
 - The URL structure defined here is used by Phases 3, 4, and 6
 - Make sure to test with both sample-data and full data directories
 - Consider adding proxy configuration if needed for API calls
+

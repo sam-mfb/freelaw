@@ -9,11 +9,13 @@ This directory contains the planning documentation for building a Legal Document
 To implement a specific phase:
 
 1. **Read the general documentation files** (in order):
+
    - `01-project-overview.md` - Project goals and architecture
    - `02-data-structure.md` - Understanding the data format
    - `03-tech-stack.md` - Technology choices and setup
 
 2. **Read your specific phase document**:
+
    - `phase-1-index-builder.md` - Data preprocessing scripts
    - `phase-2-vite-config.md` - Development server setup
    - `phase-3-data-service.md` - Data loading services
@@ -29,7 +31,7 @@ To implement a specific phase:
 
 ## Phase Dependencies
 
-While phases can be developed in parallel, here are the integration points:
+While phases must be developed in parallel, here are the integration points:
 
 - **Phase 1** produces index files that Phases 3-6 consume
 - **Phase 2** provides the server that all other phases run on
@@ -41,11 +43,12 @@ While phases can be developed in parallel, here are the integration points:
 ## Testing Your Phase
 
 Each phase document includes:
+
 - Standalone test procedures
 - Mock data/interfaces for dependencies
 - Success criteria
 
-You should be able to demonstrate your phase working in isolation before integration.
+You must be able to demonstrate your phase working in isolation before integration.
 
 ## File Structure
 
@@ -84,9 +87,3 @@ cat planning/phase-4-pdf-service.md
 # (Follow instructions in phase-4-pdf-service.md)
 ```
 
-## Integration
-
-Once all phases are complete, integration involves:
-1. Removing mocks and connecting real implementations
-2. Running the full application with `npm run dev`
-3. Testing with both sample and full datasets
