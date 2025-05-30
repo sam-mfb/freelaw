@@ -12,7 +12,6 @@ interface MockRequest {
   url: string;
 }
 
-
 // Mock the middleware functionality since we can't easily test the full Vite server
 describe('Vite Data Plugin Middleware Logic', () => {
   beforeEach(() => {
@@ -22,21 +21,21 @@ describe('Vite Data Plugin Middleware Logic', () => {
   describe('File serving logic', () => {
     it('should handle valid JSON file requests', async () => {
       const mockReq: MockRequest = {
-        url: '/14560346.json'
+        url: '/14560346.json',
       };
       const mockRes: MockResponse = {
         setHeader: vi.fn(),
         statusCode: 200,
-        end: vi.fn()
+        end: vi.fn(),
       };
 
       // Mock fs.promises methods
       vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined);
       vi.spyOn(fs.promises, 'stat').mockResolvedValue({
-        isFile: () => true
+        isFile: () => true,
       } as fs.Stats);
       vi.spyOn(fs, 'createReadStream').mockReturnValue({
-        pipe: vi.fn()
+        pipe: vi.fn(),
       } as unknown as fs.ReadStream);
 
       // Simulate the middleware logic
@@ -47,7 +46,7 @@ describe('Vite Data Plugin Middleware Logic', () => {
       try {
         await fs.promises.access(fullPath);
         const stats = await fs.promises.stat(fullPath);
-        
+
         if (stats.isFile()) {
           mockRes.setHeader('Content-Type', 'application/json');
           fs.createReadStream(fullPath).pipe(mockRes as unknown as NodeJS.WritableStream);
@@ -65,21 +64,21 @@ describe('Vite Data Plugin Middleware Logic', () => {
 
     it('should handle valid PDF file requests', async () => {
       const mockReq: MockRequest = {
-        url: '/recap/gov.uscourts.kyed.88372/gov.uscourts.kyed.88372.1.0.pdf'
+        url: '/recap/gov.uscourts.kyed.88372/gov.uscourts.kyed.88372.1.0.pdf',
       };
       const mockRes: MockResponse = {
         setHeader: vi.fn(),
         statusCode: 200,
-        end: vi.fn()
+        end: vi.fn(),
       };
 
       // Mock fs.promises methods
       vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined);
       vi.spyOn(fs.promises, 'stat').mockResolvedValue({
-        isFile: () => true
+        isFile: () => true,
       } as fs.Stats);
       vi.spyOn(fs, 'createReadStream').mockReturnValue({
-        pipe: vi.fn()
+        pipe: vi.fn(),
       } as unknown as fs.ReadStream);
 
       // Simulate the middleware logic for PDF files
@@ -90,7 +89,7 @@ describe('Vite Data Plugin Middleware Logic', () => {
       try {
         await fs.promises.access(fullPath);
         const stats = await fs.promises.stat(fullPath);
-        
+
         if (stats.isFile()) {
           mockRes.setHeader('Content-Type', 'application/pdf');
           fs.createReadStream(fullPath).pipe(mockRes as unknown as NodeJS.WritableStream);
@@ -108,12 +107,12 @@ describe('Vite Data Plugin Middleware Logic', () => {
 
     it('should return 404 for non-existent files', async () => {
       const mockReq: MockRequest = {
-        url: '/nonexistent.json'
+        url: '/nonexistent.json',
       };
       const mockRes: MockResponse = {
         setHeader: vi.fn(),
         statusCode: 200,
-        end: vi.fn()
+        end: vi.fn(),
       };
 
       // Mock fs.promises.access to reject (file doesn't exist)
@@ -127,7 +126,7 @@ describe('Vite Data Plugin Middleware Logic', () => {
       try {
         await fs.promises.access(fullPath);
         const stats = await fs.promises.stat(fullPath);
-        
+
         if (stats.isFile()) {
           mockRes.setHeader('Content-Type', 'application/json');
           fs.createReadStream(fullPath).pipe(mockRes as unknown as NodeJS.WritableStream);
@@ -144,18 +143,18 @@ describe('Vite Data Plugin Middleware Logic', () => {
 
     it('should return 404 for directories', async () => {
       const mockReq: MockRequest = {
-        url: '/directory'
+        url: '/directory',
       };
       const mockRes: MockResponse = {
         setHeader: vi.fn(),
         statusCode: 200,
-        end: vi.fn()
+        end: vi.fn(),
       };
 
       // Mock fs.promises methods - access succeeds but it's a directory
       vi.spyOn(fs.promises, 'access').mockResolvedValue(undefined);
       vi.spyOn(fs.promises, 'stat').mockResolvedValue({
-        isFile: () => false
+        isFile: () => false,
       } as fs.Stats);
 
       // Simulate the middleware logic
@@ -166,7 +165,7 @@ describe('Vite Data Plugin Middleware Logic', () => {
       try {
         await fs.promises.access(fullPath);
         const stats = await fs.promises.stat(fullPath);
-        
+
         if (stats.isFile()) {
           mockRes.setHeader('Content-Type', 'application/json');
           fs.createReadStream(fullPath).pipe(mockRes as unknown as NodeJS.WritableStream);
@@ -192,7 +191,7 @@ describe('Vite Data Plugin Middleware Logic', () => {
       const url = '/14560346.json';
       const expectedPath = path.resolve(path.join(dataRoot, 'docket-data', url));
       const actualPath = path.resolve(path.join(dataRoot, 'docket-data', url));
-      
+
       expect(actualPath).toBe(expectedPath);
     });
 
@@ -201,7 +200,7 @@ describe('Vite Data Plugin Middleware Logic', () => {
       const url = '/recap/gov.uscourts.kyed.88372/gov.uscourts.kyed.88372.1.0.pdf';
       const expectedPath = path.resolve(path.join(dataRoot, 'sata', url));
       const actualPath = path.resolve(path.join(dataRoot, 'sata', url));
-      
+
       expect(actualPath).toBe(expectedPath);
     });
   });
