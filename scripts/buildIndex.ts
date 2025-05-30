@@ -6,6 +6,7 @@ import { COURT_MAPPINGS } from '../src/types/court.types';
 import { isRawCaseData } from '../src/types/guards';
 import { extractCaseSummary } from './extractCaseSummary';
 import { extractDocuments } from './extractDocuments';
+import type { CaseSummary } from '@/types/case.types';
 
 async function ensureDirectoryExists(dirPath: string): Promise<void> {
   try {
@@ -31,7 +32,6 @@ async function readJsonFile(filePath: string): Promise<RawCaseData | null> {
     return null;
   }
 }
-
 
 async function buildIndices(config: BuildConfig): Promise<void> {
   console.log('Starting index build...');
@@ -139,4 +139,3 @@ async function main() {
 }
 
 main().catch(console.error);
-
