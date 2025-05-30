@@ -62,7 +62,7 @@ export function createDataService() {
 
       const response = await fetch(`/data/documents/${caseId}.json`);
       if (!response.ok) {
-        throw new Error(`Failed to load documents for case ${caseId}`);
+        throw new Error(`Failed to load documents for case ${caseId}: ${response.statusText}`);
       }
 
       const data = await safeJsonParse(response);
@@ -77,7 +77,7 @@ export function createDataService() {
     async loadFullCase(caseId: number): Promise<Case> {
       const response = await fetch(`/data/docket-data/${caseId}.json`);
       if (!response.ok) {
-        throw new Error(`Failed to load case ${caseId}`);
+        throw new Error(`Failed to load case ${caseId}: ${response.statusText}`);
       }
 
       const data = await safeJsonParse(response);

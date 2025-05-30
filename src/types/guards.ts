@@ -180,5 +180,9 @@ export function isDocumentArray(obj: unknown): obj is Document[] {
  * Safely parse JSON and cast to unknown to force type checking
  */
 export async function safeJsonParse(response: Response): Promise<unknown> {
-  return (await response.json()) as unknown;
+  try {
+    return (await response.json()) as unknown;
+  } catch (error) {
+    throw new Error(`Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }

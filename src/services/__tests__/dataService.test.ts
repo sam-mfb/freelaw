@@ -345,6 +345,55 @@ describe('DataService - Factory Function', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1); // Should use cache
   });
 
+  test('caching reduces fetch calls', async () => {
+    const service = createDataService();
+    
+    const mockIndex = {
+      cases: [],
+      courts: [],
+      dateRange: { min: '', max: '' },
+    };
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockIndex,
+    });
+
+    // First call should fetch
+    await service.loadCaseIndex();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    // Second call should use cache
+    await service.loadCaseIndex();
+    expect(mockFetch).toHaveBeenCalledTimes(1); // No additional fetch
+
+    // Same test for documents
+    const mockDocs = [
+      {
+        id: 1,
+        entryNumber: 1,
+        documentNumber: '1',
+        description: 'Test',
+        dateFiled: '2023-01-01',
+        pageCount: 10,
+        fileSize: 1000,
+        filePath: '/path/to/doc.pdf',
+        sha1: 'abcd1234',
+      },
+    ];
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockDocs,
+    });
+
+    await service.loadCaseDocuments(123);
+    expect(mockFetch).toHaveBeenCalledTimes(2); // Index + documents
+
+    await service.loadCaseDocuments(123);
+    expect(mockFetch).toHaveBeenCalledTimes(2); // Still 2, used cache
+  });
+
   test('factory clearCache works independently', async () => {
     const service = createDataService();
 
@@ -360,5 +409,90 @@ describe('DataService - Factory Function', () => {
     await service.loadCaseIndex();
 
     expect(mockFetch).toHaveBeenCalledTimes(2); // Should fetch again after clear
+  });
+});
+
+describe('DataService - Error Handling', () => {
+  beforeEach(() => {
+    dataService.clearCache();
+    mockFetch.mockClear();
+  });
+
+  test('loadCaseIndex - handles malformed JSON', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => {
+        throw new SyntaxError('Unexpected token in JSON');
+      },
+    });
+
+    await expect(dataService.loadCaseIndex()).rejects.toThrow('Failed to parse JSON response: Unexpected token in JSON');
+  });
+
+  test('loadCaseDocuments - handles malformed JSON', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => {
+        throw new SyntaxError('Invalid JSON');
+      },
+    });
+
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Failed to parse JSON response: Invalid JSON');
+  });
+
+  test('loadFullCase - handles malformed JSON', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => {
+        throw new Error('Malformed response');
+      },
+    });
+
+    await expect(dataService.loadFullCase(123)).rejects.toThrow('Failed to parse JSON response: Malformed response');
+  });
+
+  test('loadCaseIndex - handles network errors with status text', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      statusText: 'Not Found',
+    });
+
+    await expect(dataService.loadCaseIndex()).rejects.toThrow('Failed to load case index: Not Found');
+  });
+
+  test('loadCaseDocuments - handles network errors with status text', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      statusText: 'Internal Server Error',
+    });
+
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Failed to load documents for case 123: Internal Server Error');
+  });
+
+  test('loadFullCase - handles network errors with status text', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      statusText: 'Service Unavailable',
+    });
+
+    await expect(dataService.loadFullCase(123)).rejects.toThrow('Failed to load case 123: Service Unavailable');
+  });
+
+  test('loadCaseIndex - handles fetch rejections', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(dataService.loadCaseIndex()).rejects.toThrow('Network error');
+  });
+
+  test('loadCaseDocuments - handles fetch rejections', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Connection timeout'));
+
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Connection timeout');
+  });
+
+  test('loadFullCase - handles fetch rejections', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('DNS resolution failed'));
+
+    await expect(dataService.loadFullCase(123)).rejects.toThrow('DNS resolution failed');
   });
 });
