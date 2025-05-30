@@ -29,6 +29,6 @@
       "@utils/*": ["src/utils/*"]
     }
   },
-  "include": ["src", "scripts"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src", "scripts"]
 }
+
