@@ -19,7 +19,16 @@ describe('DataService - Module Functions', () => {
 
   test('loadCaseIndex - success', async () => {
     const mockIndex = {
-      cases: [{ id: 1, name: 'Test Case' }],
+      cases: [{
+        id: 1,
+        name: 'Test Case',
+        nameShort: 'Test',
+        court: 'test',
+        filed: '2023-01-01',
+        terminated: null,
+        docCount: 5,
+        availCount: 3
+      }],
       courts: [{ code: 'test', name: 'Test Court' }],
       dateRange: { min: '2020-01-01', max: '2023-12-31' },
     };
@@ -52,7 +61,7 @@ describe('DataService - Module Functions', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1); // Should use cache
   });
 
-  test('loadCaseIndex - handles error', async () => {
+  test('loadCaseIndex - handles fetch error', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       statusText: 'Not Found',
@@ -61,8 +70,27 @@ describe('DataService - Module Functions', () => {
     await expect(loadCaseIndex()).rejects.toThrow('Failed to load case index: Not Found');
   });
 
+  test('loadCaseIndex - handles invalid data format', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ invalid: 'data' }),
+    });
+
+    await expect(loadCaseIndex()).rejects.toThrow('Invalid case index format received from server');
+  });
+
   test('loadCaseDocuments - success', async () => {
-    const mockDocs = [{ id: 1, description: 'Test Document' }];
+    const mockDocs = [{
+      id: 1,
+      entryNumber: 1,
+      documentNumber: '1',
+      description: 'Test Document',
+      dateFiled: '2023-01-01',
+      pageCount: 10,
+      fileSize: 1000,
+      filePath: '/path/to/doc.pdf',
+      sha1: 'abcd1234'
+    }];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -75,7 +103,17 @@ describe('DataService - Module Functions', () => {
   });
 
   test('loadCaseDocuments - caches result', async () => {
-    const mockDocs = [{ id: 1, description: 'Test Document' }];
+    const mockDocs = [{
+      id: 1,
+      entryNumber: 1,
+      documentNumber: '1',
+      description: 'Test Document',
+      dateFiled: '2023-01-01',
+      pageCount: 10,
+      fileSize: 1000,
+      filePath: '/path/to/doc.pdf',
+      sha1: 'abcd1234'
+    }];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -88,13 +126,22 @@ describe('DataService - Module Functions', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1); // Should use cache
   });
 
-  test('loadCaseDocuments - handles error', async () => {
+  test('loadCaseDocuments - handles fetch error', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       statusText: 'Not Found',
     });
 
     await expect(loadCaseDocuments(123)).rejects.toThrow('Failed to load documents for case 123');
+  });
+
+  test('loadCaseDocuments - handles invalid data format', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ invalid: 'data' }),
+    });
+
+    await expect(loadCaseDocuments(123)).rejects.toThrow('Invalid documents format received for case 123');
   });
 
   test('loadFullCase - success', async () => {
@@ -183,9 +230,19 @@ describe('DataService - Module Functions', () => {
 
   test('clearCache - clears all caches', async () => {
     const mockIndex = { cases: [], courts: [], dateRange: { min: '', max: '' } };
-    const mockDocs = [{ id: 1, description: 'Test' }];
+    const mockDocs = [{
+      id: 1,
+      entryNumber: 1,
+      documentNumber: '1',
+      description: 'Test',
+      dateFiled: '2023-01-01',
+      pageCount: 10,
+      fileSize: 1000,
+      filePath: '/path/to/doc.pdf',
+      sha1: 'abcd1234'
+    }];
 
-    mockFetch.mockResolvedValue({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockIndex,
     });
@@ -193,7 +250,7 @@ describe('DataService - Module Functions', () => {
     // Load data to populate cache
     await loadCaseIndex();
     
-    mockFetch.mockResolvedValue({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockDocs,
     });
@@ -204,7 +261,16 @@ describe('DataService - Module Functions', () => {
     clearCache();
 
     // Should fetch again after cache clear
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockIndex,
+    });
     await loadCaseIndex();
+    
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockDocs,
+    });
     await loadCaseDocuments(123);
 
     expect(mockFetch).toHaveBeenCalledTimes(4); // 2 initial + 2 after clear
@@ -221,7 +287,16 @@ describe('DataService - Factory Function', () => {
     const service2 = createDataService();
 
     const mockIndex = {
-      cases: [{ id: 1, name: 'Test Case' }],
+      cases: [{
+        id: 1,
+        name: 'Test Case',
+        nameShort: 'Test',
+        court: 'test',
+        filed: '2023-01-01',
+        terminated: null,
+        docCount: 5,
+        availCount: 3
+      }],
       courts: [],
       dateRange: { min: '', max: '' },
     };

@@ -1,10 +1,7 @@
-import { Case, CaseSummary } from '../types/case.types';
-import { Document } from '../types/document.types';
-import { Court } from '../types/court.types';
-import { CaseIndex, RawCaseData } from '../types/index.types';
-
-// Re-export types for convenience
-export type { Case, CaseSummary, Document, Court, CaseIndex };
+import type { Case } from '../types/case.types';
+import type { Document } from '../types/document.types';
+import type { CaseIndex, RawCaseData } from '../types/index.types';
+import { isCaseIndex, isDocumentArray, isRawCaseData, safeJsonParse } from '../types/guards';
 
 // Cache storage
 let caseIndex: CaseIndex | null = null;
@@ -16,13 +13,18 @@ const documentCache = new Map<number, Document[]>();
 export async function loadCaseIndex(): Promise<CaseIndex> {
   if (caseIndex) return caseIndex;
 
-  const response = await fetch("/data/case-index.json");
+  const response = await fetch('/data/case-index.json');
   if (!response.ok) {
     throw new Error(`Failed to load case index: ${response.statusText}`);
   }
 
-  caseIndex = await response.json();
-  return caseIndex!;
+  const data = await safeJsonParse(response);
+  if (!isCaseIndex(data)) {
+    throw new Error('Invalid case index format received from server');
+  }
+
+  caseIndex = data;
+  return caseIndex;
 }
 
 /**
@@ -38,9 +40,13 @@ export async function loadCaseDocuments(caseId: number): Promise<Document[]> {
     throw new Error(`Failed to load documents for case ${caseId}`);
   }
 
-  const documents = await response.json();
-  documentCache.set(caseId, documents);
-  return documents;
+  const data = await safeJsonParse(response);
+  if (!isDocumentArray(data)) {
+    throw new Error(`Invalid documents format received for case ${caseId}`);
+  }
+
+  documentCache.set(caseId, data);
+  return data;
 }
 
 /**
@@ -52,7 +58,11 @@ export async function loadFullCase(caseId: number): Promise<Case> {
     throw new Error(`Failed to load case ${caseId}`);
   }
 
-  const data = await response.json();
+  const data = await safeJsonParse(response);
+  if (!isRawCaseData(data)) {
+    throw new Error(`Invalid case data format received for case ${caseId}`);
+  }
+
   return transformToCase(data);
 }
 
@@ -75,7 +85,7 @@ function transformToCase(data: RawCaseData): Case {
     docketNumber: data.docket_number || '',
     dateFiled: data.date_filed || '',
     dateTerminated: data.date_terminated || null,
-    assignedTo: data.assigned_to_str || "Unknown",
+    assignedTo: data.assigned_to_str || 'Unknown',
     documentCount: data.docket_entries?.length || 0,
     availableDocumentCount: countAvailableDocuments(data),
   };
@@ -102,13 +112,18 @@ export function createDataService() {
     async loadCaseIndex(): Promise<CaseIndex> {
       if (localCaseIndex) return localCaseIndex;
 
-      const response = await fetch("/data/case-index.json");
+      const response = await fetch('/data/case-index.json');
       if (!response.ok) {
         throw new Error(`Failed to load case index: ${response.statusText}`);
       }
 
-      localCaseIndex = await response.json();
-      return localCaseIndex!;
+      const data = await safeJsonParse(response);
+      if (!isCaseIndex(data)) {
+        throw new Error('Invalid case index format received from server');
+      }
+
+      localCaseIndex = data;
+      return localCaseIndex;
     },
 
     async loadCaseDocuments(caseId: number): Promise<Document[]> {
@@ -121,9 +136,13 @@ export function createDataService() {
         throw new Error(`Failed to load documents for case ${caseId}`);
       }
 
-      const documents = await response.json();
-      localDocumentCache.set(caseId, documents);
-      return documents;
+      const data = await safeJsonParse(response);
+      if (!isDocumentArray(data)) {
+        throw new Error(`Invalid documents format received for case ${caseId}`);
+      }
+
+      localDocumentCache.set(caseId, data);
+      return data;
     },
 
     async loadFullCase(caseId: number): Promise<Case> {
@@ -132,7 +151,11 @@ export function createDataService() {
         throw new Error(`Failed to load case ${caseId}`);
       }
 
-      const data = await response.json();
+      const data = await safeJsonParse(response);
+      if (!isRawCaseData(data)) {
+        throw new Error(`Invalid case data format received for case ${caseId}`);
+      }
+
       return transformToCase(data);
     },
 
