@@ -3,77 +3,6 @@ import type { Document } from '../types/document.types';
 import type { CaseIndex, RawCaseData } from '../types/index.types';
 import { isCaseIndex, isDocumentArray, isRawCaseData, safeJsonParse } from '../types/guards';
 
-// Cache storage
-let caseIndex: CaseIndex | null = null;
-const documentCache = new Map<number, Document[]>();
-
-/**
- * Load the case index. Caches result for subsequent calls.
- */
-export async function loadCaseIndex(): Promise<CaseIndex> {
-  if (caseIndex) return caseIndex;
-
-  const response = await fetch('/data/case-index.json');
-  if (!response.ok) {
-    throw new Error(`Failed to load case index: ${response.statusText}`);
-  }
-
-  const data = await safeJsonParse(response);
-  if (!isCaseIndex(data)) {
-    throw new Error('Invalid case index format received from server');
-  }
-
-  caseIndex = data;
-  return caseIndex;
-}
-
-/**
- * Load documents for a specific case. Caches results.
- */
-export async function loadCaseDocuments(caseId: number): Promise<Document[]> {
-  if (documentCache.has(caseId)) {
-    return documentCache.get(caseId)!;
-  }
-
-  const response = await fetch(`/data/documents/${caseId}.json`);
-  if (!response.ok) {
-    throw new Error(`Failed to load documents for case ${caseId}`);
-  }
-
-  const data = await safeJsonParse(response);
-  if (!isDocumentArray(data)) {
-    throw new Error(`Invalid documents format received for case ${caseId}`);
-  }
-
-  documentCache.set(caseId, data);
-  return data;
-}
-
-/**
- * Load full case details from original JSON (optional method)
- */
-export async function loadFullCase(caseId: number): Promise<Case> {
-  const response = await fetch(`/data/docket-data/${caseId}.json`);
-  if (!response.ok) {
-    throw new Error(`Failed to load case ${caseId}`);
-  }
-
-  const data = await safeJsonParse(response);
-  if (!isRawCaseData(data)) {
-    throw new Error(`Invalid case data format received for case ${caseId}`);
-  }
-
-  return transformToCase(data);
-}
-
-/**
- * Clear all caches
- */
-export function clearCache(): void {
-  caseIndex = null;
-  documentCache.clear();
-}
-
 // Helper functions
 function transformToCase(data: RawCaseData): Case {
   return {
@@ -103,7 +32,7 @@ function countAvailableDocuments(data: RawCaseData): number {
   return count;
 }
 
-// Export factory function to create isolated instances if needed
+// Factory function to create data service instances
 export function createDataService() {
   let localCaseIndex: CaseIndex | null = null;
   const localDocumentCache = new Map<number, Document[]>();
@@ -165,3 +94,9 @@ export function createDataService() {
     },
   };
 }
+
+// Default instance for convenience
+export const dataService = createDataService();
+
+// Re-export types for convenience
+export type { Case, CaseIndex, Document };

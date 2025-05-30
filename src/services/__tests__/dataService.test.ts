@@ -1,19 +1,13 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { 
-  loadCaseIndex, 
-  loadCaseDocuments, 
-  loadFullCase,
-  clearCache,
-  createDataService 
-} from '../dataService';
+import { createDataService, dataService } from '../dataService';
 
 // Mock fetch for testing
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe('DataService - Module Functions', () => {
+describe('DataService - Default Instance', () => {
   beforeEach(() => {
-    clearCache();
+    dataService.clearCache();
     mockFetch.mockClear();
   });
 
@@ -38,7 +32,7 @@ describe('DataService - Module Functions', () => {
       json: async () => mockIndex,
     });
 
-    const result = await loadCaseIndex();
+    const result = await dataService.loadCaseIndex();
     expect(result).toEqual(mockIndex);
     expect(mockFetch).toHaveBeenCalledWith('/data/case-index.json');
   });
@@ -55,8 +49,8 @@ describe('DataService - Module Functions', () => {
       json: async () => mockIndex,
     });
 
-    await loadCaseIndex();
-    await loadCaseIndex(); // Second call
+    await dataService.loadCaseIndex();
+    await dataService.loadCaseIndex(); // Second call
 
     expect(mockFetch).toHaveBeenCalledTimes(1); // Should use cache
   });
@@ -67,7 +61,7 @@ describe('DataService - Module Functions', () => {
       statusText: 'Not Found',
     });
 
-    await expect(loadCaseIndex()).rejects.toThrow('Failed to load case index: Not Found');
+    await expect(dataService.loadCaseIndex()).rejects.toThrow('Failed to load case index: Not Found');
   });
 
   test('loadCaseIndex - handles invalid data format', async () => {
@@ -76,7 +70,7 @@ describe('DataService - Module Functions', () => {
       json: async () => ({ invalid: 'data' }),
     });
 
-    await expect(loadCaseIndex()).rejects.toThrow('Invalid case index format received from server');
+    await expect(dataService.loadCaseIndex()).rejects.toThrow('Invalid case index format received from server');
   });
 
   test('loadCaseDocuments - success', async () => {
@@ -97,7 +91,7 @@ describe('DataService - Module Functions', () => {
       json: async () => mockDocs,
     });
 
-    const result = await loadCaseDocuments(123);
+    const result = await dataService.loadCaseDocuments(123);
     expect(result).toEqual(mockDocs);
     expect(mockFetch).toHaveBeenCalledWith('/data/documents/123.json');
   });
@@ -120,8 +114,8 @@ describe('DataService - Module Functions', () => {
       json: async () => mockDocs,
     });
 
-    await loadCaseDocuments(123);
-    await loadCaseDocuments(123); // Second call
+    await dataService.loadCaseDocuments(123);
+    await dataService.loadCaseDocuments(123); // Second call
 
     expect(mockFetch).toHaveBeenCalledTimes(1); // Should use cache
   });
@@ -132,7 +126,7 @@ describe('DataService - Module Functions', () => {
       statusText: 'Not Found',
     });
 
-    await expect(loadCaseDocuments(123)).rejects.toThrow('Failed to load documents for case 123');
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Failed to load documents for case 123');
   });
 
   test('loadCaseDocuments - handles invalid data format', async () => {
@@ -141,7 +135,7 @@ describe('DataService - Module Functions', () => {
       json: async () => ({ invalid: 'data' }),
     });
 
-    await expect(loadCaseDocuments(123)).rejects.toThrow('Invalid documents format received for case 123');
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Invalid documents format received for case 123');
   });
 
   test('loadFullCase - success', async () => {
@@ -181,7 +175,7 @@ describe('DataService - Module Functions', () => {
       json: async () => mockRawCase,
     });
 
-    const result = await loadFullCase(123);
+    const result = await dataService.loadFullCase(123);
     
     expect(result).toEqual({
       id: 123,
@@ -211,7 +205,7 @@ describe('DataService - Module Functions', () => {
       json: async () => mockRawCase,
     });
 
-    const result = await loadFullCase(123);
+    const result = await dataService.loadFullCase(123);
     
     expect(result).toEqual({
       id: 123,
@@ -248,30 +242,30 @@ describe('DataService - Module Functions', () => {
     });
 
     // Load data to populate cache
-    await loadCaseIndex();
+    await dataService.loadCaseIndex();
     
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockDocs,
     });
     
-    await loadCaseDocuments(123);
+    await dataService.loadCaseDocuments(123);
 
     // Clear cache
-    clearCache();
+    dataService.clearCache();
 
     // Should fetch again after cache clear
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockIndex,
     });
-    await loadCaseIndex();
+    await dataService.loadCaseIndex();
     
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockDocs,
     });
-    await loadCaseDocuments(123);
+    await dataService.loadCaseDocuments(123);
 
     expect(mockFetch).toHaveBeenCalledTimes(4); // 2 initial + 2 after clear
   });
