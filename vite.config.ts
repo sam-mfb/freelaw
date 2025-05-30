@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 
 const dataRoot = process.env.USE_SAMPLE_DATA === 'true' ? './sample-data' : './data';
+const debugMiddleware = process.env.DEBUG_MIDDLEWARE === 'true';
 
 export default defineConfig({
   plugins: [
@@ -33,21 +34,39 @@ export default defineConfig({
         });
         
         server.middlewares.use('/data/sata', async (req, res, next) => {
+          if (debugMiddleware) {
+            console.log(`[PDF Middleware] Request for: ${req.url}`);
+            console.log(`[PDF Middleware] Using dataRoot: ${dataRoot}`);
+          }
+          
           const filePath = path.join(dataRoot, 'sata', req.url!);
           const fullPath = path.resolve(filePath);
+          
+          if (debugMiddleware) {
+            console.log(`[PDF Middleware] Looking for file at: ${fullPath}`);
+          }
           
           try {
             await fs.promises.access(fullPath);
             const stats = await fs.promises.stat(fullPath);
             
             if (stats.isFile()) {
+              if (debugMiddleware) {
+                console.log(`[PDF Middleware] Serving PDF: ${fullPath}`);
+              }
               res.setHeader('Content-Type', 'application/pdf');
               fs.createReadStream(fullPath).pipe(res);
             } else {
+              if (debugMiddleware) {
+                console.log(`[PDF Middleware] Path is not a file: ${fullPath}`);
+              }
               res.statusCode = 404;
               res.end('File not found');
             }
-          } catch {
+          } catch (error) {
+            if (debugMiddleware) {
+              console.log(`[PDF Middleware] File not found: ${fullPath}`, error);
+            }
             res.statusCode = 404;
             res.end('File not found');
           }
