@@ -1,13 +1,11 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { BuildConfig, RawCaseData, CaseIndex } from '../src/types/index.types';
-import { CaseSummary } from '../src/types/case.types';
-import { Document } from '../src/types/document.types';
-import { Court, COURT_MAPPINGS } from '../src/types/court.types';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import type { BuildConfig, RawCaseData, CaseIndex } from '../src/types/index.types';
+import type { CaseSummary } from '../src/types/case.types';
+import type { Document } from '../src/types/document.types';
+import type { Court } from '../src/types/court.types';
+import { COURT_MAPPINGS } from '../src/types/court.types';
+import { isRawCaseData } from '../src/types/guards';
 
 async function ensureDirectoryExists(dirPath: string): Promise<void> {
   try {
@@ -20,7 +18,14 @@ async function ensureDirectoryExists(dirPath: string): Promise<void> {
 async function readJsonFile(filePath: string): Promise<RawCaseData | null> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(content) as RawCaseData;
+    const data = JSON.parse(content);
+    
+    if (!isRawCaseData(data)) {
+      console.error(`Invalid case data structure in file ${filePath}`);
+      return null;
+    }
+    
+    return data;
   } catch (error) {
     console.error(`Error reading file ${filePath}:`, error);
     return null;
@@ -50,7 +55,7 @@ function extractCaseSummary(caseData: RawCaseData): CaseSummary {
     nameShort: caseData.case_name_short || caseData.case_name || 'Unknown',
     court: caseData.court || 'unknown',
     filed: caseData.date_filed || '',
-    terminated: caseData.date_terminated,
+    terminated: caseData.date_terminated ?? null,
     docCount,
     availCount
   };
@@ -70,8 +75,8 @@ function extractDocuments(caseData: RawCaseData): Document[] {
               documentNumber: doc.document_number,
               description: doc.description || '',
               dateFiled: entry.date_entered || '',
-              pageCount: doc.page_count,
-              fileSize: doc.file_size,
+              pageCount: doc.page_count ?? null,
+              fileSize: doc.file_size ?? null,
               filePath: doc.filepath_local,
               sha1: doc.sha1 || ''
             });
