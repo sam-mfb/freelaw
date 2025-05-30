@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { BuildConfig, RawCaseData, CaseIndex } from '../src/types/index.types';
 import type { Court } from '../src/types/court.types';
-import { COURT_MAPPINGS } from '../src/types/court.types';
+import { COURT_MAPPINGS } from '../src/constants/courts';
 import { isRawCaseData } from '../src/types/guards';
 import { extractCaseSummary } from './extractCaseSummary';
 import { extractDocuments } from './extractDocuments';

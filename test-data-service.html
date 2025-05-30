@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h2>Data Service Test</h2>
+    <button onclick="testModuleFunctions()">Test Default Instance</button>
+    <button onclick="testFactory()">Test Factory Function</button>
+    <pre id="results"></pre>
+
+    <script type="module">
+      import { 
+        dataService,
+        createDataService 
+      } from "/src/services/dataService.ts";
+
+      window.testModuleFunctions = async () => {
+        const results = document.getElementById("results");
+        results.textContent = "Testing default instance...\n";
+
+        try {
+          // Test loading case index
+          const index = await dataService.loadCaseIndex();
+          results.textContent += `✅ Loaded ${index.cases.length} cases\n`;
+
+          // Test loading documents
+          if (index.cases.length > 0) {
+            const docs = await dataService.loadCaseDocuments(index.cases[0].id);
+            results.textContent += `✅ Loaded ${docs.length} documents\n`;
+          }
+
+          // Test cache
+          const index2 = await dataService.loadCaseIndex();
+          results.textContent += `✅ Cache working (same reference: ${index === index2})\n`;
+
+          results.textContent += "\n✅ Default instance test passed!";
+        } catch (error) {
+          results.textContent += `❌ Error: ${error.message}\n`;
+        }
+      };
+
+      window.testFactory = async () => {
+        const results = document.getElementById("results");
+        results.textContent = "Testing factory function...\n";
+
+        try {
+          const service = createDataService();
+          
+          // Test loading case index
+          const index = await service.loadCaseIndex();
+          results.textContent += `✅ Loaded ${index.cases.length} cases\n`;
+
+          // Test loading documents
+          if (index.cases.length > 0) {
+            const docs = await service.loadCaseDocuments(index.cases[0].id);
+            results.textContent += `✅ Loaded ${docs.length} documents\n`;
+          }
+
+          results.textContent += "\n✅ Factory function test passed!";
+        } catch (error) {
+          results.textContent += `❌ Error: ${error.message}\n`;
+        }
+      };
+    </script>
+  </body>
+</html>
