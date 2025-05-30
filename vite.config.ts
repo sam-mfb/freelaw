@@ -1,11 +1,44 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 
 const dataRoot = process.env.USE_SAMPLE_DATA === 'true' ? './sample-data' : './data';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'serve-data-files',
+      configureServer(server) {
+        server.middlewares.use('/data/docket-data', (req, res, next) => {
+          const filePath = path.join(dataRoot, 'docket-data', req.url!);
+          const fullPath = path.resolve(filePath);
+          
+          if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+            res.setHeader('Content-Type', 'application/json');
+            fs.createReadStream(fullPath).pipe(res);
+          } else {
+            res.statusCode = 404;
+            res.end('File not found');
+          }
+        });
+        
+        server.middlewares.use('/data/sata', (req, res, next) => {
+          const filePath = path.join(dataRoot, 'sata', req.url!);
+          const fullPath = path.resolve(filePath);
+          
+          if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+            res.setHeader('Content-Type', 'application/pdf');
+            fs.createReadStream(fullPath).pipe(res);
+          } else {
+            res.statusCode = 404;
+            res.end('File not found');
+          }
+        });
+      }
+    }
+  ],
 
   server: {
     port: 3000,
@@ -13,31 +46,6 @@ export default defineConfig({
     fs: {
       // Allow serving files outside of project root
       allow: ['..'],
-    },
-    proxy: {
-      // Proxy requests for original docket JSON files
-      '/data/docket-data': {
-        target: `file://${path.resolve(__dirname, dataRoot, 'docket-data')}`,
-        rewrite: (path) => path.replace('/data/docket-data', ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.removeHeader('origin');
-          });
-        },
-      },
-      // Proxy requests for PDF files
-      '/data/sata': {
-        target: `file://${path.resolve(__dirname, dataRoot, 'sata')}`,
-        rewrite: (path) => path.replace('/data/sata', ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.removeHeader('origin');
-          });
-          proxy.on('proxyRes', (proxyRes) => {
-            proxyRes.headers['content-type'] = 'application/pdf';
-          });
-        },
-      },
     },
   },
 
