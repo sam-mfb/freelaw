@@ -1,11 +1,11 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { BuildConfig, RawCaseData, CaseIndex } from '../src/types/index.types';
-import type { CaseSummary } from '../src/types/case.types';
-import type { Document } from '../src/types/document.types';
 import type { Court } from '../src/types/court.types';
 import { COURT_MAPPINGS } from '../src/types/court.types';
 import { isRawCaseData } from '../src/types/guards';
+import { extractCaseSummary } from './extractCaseSummary';
+import { extractDocuments } from './extractDocuments';
 
 async function ensureDirectoryExists(dirPath: string): Promise<void> {
   try {
@@ -19,12 +19,12 @@ async function readJsonFile(filePath: string): Promise<RawCaseData | null> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     const data = JSON.parse(content);
-    
+
     if (!isRawCaseData(data)) {
       console.error(`Invalid case data structure in file ${filePath}`);
       return null;
     }
-    
+
     return data;
   } catch (error) {
     console.error(`Error reading file ${filePath}:`, error);
@@ -32,62 +32,6 @@ async function readJsonFile(filePath: string): Promise<RawCaseData | null> {
   }
 }
 
-function extractCaseSummary(caseData: RawCaseData): CaseSummary {
-  let docCount = 0;
-  let availCount = 0;
-
-  if (caseData.docket_entries) {
-    for (const entry of caseData.docket_entries) {
-      if (entry.recap_documents) {
-        for (const doc of entry.recap_documents) {
-          docCount++;
-          if (doc.is_available && doc.filepath_local) {
-            availCount++;
-          }
-        }
-      }
-    }
-  }
-
-  return {
-    id: caseData.id,
-    name: caseData.case_name || 'Unknown Case',
-    nameShort: caseData.case_name_short || caseData.case_name || 'Unknown',
-    court: caseData.court || 'unknown',
-    filed: caseData.date_filed || '',
-    terminated: caseData.date_terminated ?? null,
-    docCount,
-    availCount
-  };
-}
-
-function extractDocuments(caseData: RawCaseData): Document[] {
-  const documents: Document[] = [];
-
-  if (caseData.docket_entries) {
-    for (const entry of caseData.docket_entries) {
-      if (entry.recap_documents) {
-        for (const doc of entry.recap_documents) {
-          if (doc.is_available && doc.filepath_local) {
-            documents.push({
-              id: doc.id,
-              entryNumber: entry.id,
-              documentNumber: doc.document_number,
-              description: doc.description || '',
-              dateFiled: entry.date_entered || '',
-              pageCount: doc.page_count ?? null,
-              fileSize: doc.file_size ?? null,
-              filePath: doc.filepath_local,
-              sha1: doc.sha1 || ''
-            });
-          }
-        }
-      }
-    }
-  }
-
-  return documents;
-}
 
 async function buildIndices(config: BuildConfig): Promise<void> {
   console.log('Starting index build...');
@@ -103,7 +47,7 @@ async function buildIndices(config: BuildConfig): Promise<void> {
   await ensureDirectoryExists(path.join(config.outputDir, 'documents'));
 
   const files = await fs.readdir(config.jsonDir);
-  const jsonFiles = files.filter(f => f.endsWith('.json'));
+  const jsonFiles = files.filter((f) => f.endsWith('.json'));
 
   console.log(`Found ${jsonFiles.length} JSON files to process`);
 
@@ -118,7 +62,7 @@ async function buildIndices(config: BuildConfig): Promise<void> {
 
     const caseSummary = extractCaseSummary(caseData);
     cases.push(caseSummary);
-    
+
     if (caseSummary.court) {
       courtSet.add(caseSummary.court);
     }
@@ -146,9 +90,9 @@ async function buildIndices(config: BuildConfig): Promise<void> {
 
   const courts: Court[] = Array.from(courtSet)
     .sort()
-    .map(code => ({
+    .map((code) => ({
       code,
-      name: COURT_MAPPINGS[code] || `Unknown Court (${code})`
+      name: COURT_MAPPINGS[code] || `Unknown Court (${code})`,
     }));
 
   const caseIndex: CaseIndex = {
@@ -156,8 +100,8 @@ async function buildIndices(config: BuildConfig): Promise<void> {
     courts,
     dateRange: {
       min: minDate || '',
-      max: maxDate || ''
-    }
+      max: maxDate || '',
+    },
   };
 
   const indexPath = path.join(config.outputDir, 'case-index.json');
@@ -183,7 +127,7 @@ async function main() {
   const config: BuildConfig = {
     jsonDir: path.join(dataDir, 'docket-data'),
     outputDir: './public/data',
-    pdfBaseDir: path.join(dataDir, 'sata')
+    pdfBaseDir: path.join(dataDir, 'sata'),
   };
 
   try {
@@ -196,4 +140,3 @@ async function main() {
 
 main().catch(console.error);
 
-export { buildIndices };

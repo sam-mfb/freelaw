@@ -74,7 +74,7 @@ describe('Type Guards', () => {
   describe('isRawDocketEntry', () => {
     it('should return true for valid docket entry', () => {
       const validEntry = {
-        entry_number: 1,
+        id: 1,
         date_entered: '2023-01-15',
         recap_documents: [
           {
@@ -90,7 +90,7 @@ describe('Type Guards', () => {
     
     it('should return true for minimal valid docket entry', () => {
       const minimalEntry = {
-        entry_number: 1
+        id: 1
       };
       
       expect(isRawDocketEntry(minimalEntry)).toBe(true);
@@ -98,7 +98,7 @@ describe('Type Guards', () => {
     
     it('should return true for entry without recap_documents', () => {
       const entryWithoutDocs = {
-        entry_number: 1,
+        id: 1,
         date_entered: '2023-01-15'
       };
       
@@ -113,23 +113,23 @@ describe('Type Guards', () => {
       expect(isRawDocketEntry([])).toBe(false);
     });
     
-    it('should return false when entry_number is missing or wrong type', () => {
+    it('should return false when id is missing or wrong type', () => {
       expect(isRawDocketEntry({})).toBe(false);
-      expect(isRawDocketEntry({ entry_number: '1' })).toBe(false);
+      expect(isRawDocketEntry({ id: '1' })).toBe(false);
     });
     
     it('should return false when date_entered has wrong type', () => {
-      expect(isRawDocketEntry({ entry_number: 1, date_entered: 123 })).toBe(false);
+      expect(isRawDocketEntry({ id: 1, date_entered: 123 })).toBe(false);
     });
     
     it('should return false when recap_documents is not an array', () => {
-      expect(isRawDocketEntry({ entry_number: 1, recap_documents: {} })).toBe(false);
-      expect(isRawDocketEntry({ entry_number: 1, recap_documents: 'docs' })).toBe(false);
+      expect(isRawDocketEntry({ id: 1, recap_documents: {} })).toBe(false);
+      expect(isRawDocketEntry({ id: 1, recap_documents: 'docs' })).toBe(false);
     });
     
     it('should return false when recap_documents contains invalid documents', () => {
       const entryWithInvalidDocs = {
-        entry_number: 1,
+        id: 1,
         recap_documents: [
           { id: 123, document_number: '1', is_available: true },
           { id: '456', document_number: '2', is_available: true } // Invalid id type
@@ -151,7 +151,7 @@ describe('Type Guards', () => {
         date_terminated: '2023-12-01',
         docket_entries: [
           {
-            entry_number: 1,
+            id: 1,
             recap_documents: [
               {
                 id: 123,

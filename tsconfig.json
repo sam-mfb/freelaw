@@ -29,6 +29,6 @@
       "@utils/*": ["src/utils/*"]
     }
   },
-  "include": ["src", "scripts"],
-  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
+  "include": ["src", "scripts"]
 }
+
