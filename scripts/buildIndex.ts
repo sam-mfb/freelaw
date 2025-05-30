@@ -6,6 +6,7 @@ import { COURT_MAPPINGS } from '../src/constants/courts';
 import { isRawCaseData } from '../src/types/guards';
 import { extractCaseSummary } from './extractCaseSummary';
 import { extractDocuments } from './extractDocuments';
+import type { CaseSummary } from '@/types/case.types';
 
 async function ensureDirectoryExists(dirPath: string): Promise<void> {
   try {
