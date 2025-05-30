@@ -13,7 +13,7 @@
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest run",
     "test:ui": "vitest --ui"
   },
   "dependencies": {

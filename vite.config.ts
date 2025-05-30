@@ -50,7 +50,16 @@ export default defineConfig({
       '@store': path.resolve(__dirname, './src/store'),
       '@components': path.resolve(__dirname, './src/components'),
       '@hooks': path.resolve(__dirname, './src/hooks'),
-      '@utils': path.resolve(__dirname, './src/utils'),
-    },
+      '@utils': path.resolve(__dirname, './src/utils')
+    }
   },
+  
+  test: {
+    globals: true,
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html']
+    }
+  }
 });
