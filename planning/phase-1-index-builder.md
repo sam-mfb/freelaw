@@ -29,11 +29,10 @@ use `vite-node` to avoid needing an interim compile step
 ### Core Functionality
 
 ```typescript
-interface BuildConfig {
-  jsonDir: string; // Input directory
-  outputDir: string; // Output directory
-  pdfBaseDir: string; // PDF directory (for validation)
-}
+import { BuildConfig, RawCaseData, CaseIndex } from '@types/index.types';
+import { CaseSummary } from '@types/case.types';
+import { Document } from '@types/document.types';
+import { Court, COURT_MAPPINGS } from '@types/court.types';
 
 async function buildIndices(config: BuildConfig): Promise<void> {
   // 1. Read all JSON files from jsonDir
@@ -103,8 +102,8 @@ async function buildIndices(config: BuildConfig): Promise<void> {
 ```json
 {
   "scripts": {
-    "build:index": "tsx scripts/buildIndex.ts --data-dir=./data",
-    "build:index:sample": "tsx scripts/buildIndex.ts --data-dir=./sample-data"
+    "build:index": "vite-node scripts/buildIndex.ts --data-dir=./data",
+    "build:index:sample": "vite-node scripts/buildIndex.ts --data-dir=./sample-data"
   }
 }
 ```

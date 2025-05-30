@@ -8,53 +8,13 @@ Create a TypeScript service that loads and manages case and document data from t
 
 ```typescript
 // services/dataService.ts
-export interface CaseIndex {
-  cases: CaseSummary[];
-  courts: Court[];
-  dateRange: { min: string; max: string };
-}
+import { Case, CaseSummary } from '@types/case.types';
+import { Document } from '@types/document.types';
+import { Court } from '@types/court.types';
+import { CaseIndex, RawCaseData } from '@types/index.types';
 
-export interface CaseSummary {
-  id: number;
-  name: string;
-  nameShort: string;
-  court: string;
-  filed: string;
-  terminated: string | null;
-  docCount: number;
-  availCount: number;
-}
-
-export interface Court {
-  code: string;
-  name: string;
-}
-
-export interface Document {
-  id: number;
-  entryNumber: number;
-  documentNumber: string;
-  description: string;
-  dateFiled: string;
-  pageCount: number | null;
-  fileSize: number | null;
-  filePath: string | null;
-  sha1: string;
-}
-
-export interface Case {
-  id: number;
-  caseName: string;
-  caseNameShort: string;
-  caseNameFull: string;
-  court: string;
-  docketNumber: string;
-  dateFiled: string;
-  dateTerminated: string | null;
-  assignedTo: string;
-  documentCount: number;
-  availableDocumentCount: number;
-}
+// Re-export types for convenience
+export type { Case, CaseSummary, Document, Court, CaseIndex };
 ```
 
 ## Implementation
@@ -119,7 +79,7 @@ export function clearCache(): void {
 }
 
 // Helper functions
-function transformToCase(data: any): Case {
+function transformToCase(data: RawCaseData): Case {
   // Transform raw JSON to Case interface
   return {
     id: data.id,
@@ -136,7 +96,7 @@ function transformToCase(data: any): Case {
   };
 }
 
-function countAvailableDocuments(data: any): number {
+function countAvailableDocuments(data: RawCaseData): number {
   let count = 0;
   for (const entry of data.docket_entries || []) {
     for (const doc of entry.recap_documents || []) {

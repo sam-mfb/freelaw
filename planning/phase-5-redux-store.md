@@ -30,8 +30,9 @@ export type AppDispatch = typeof store.dispatch;
 ```typescript
 // store/casesSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { dataService } from '../services/dataService';
-import type { CaseIndex, CaseSummary } from '../services/dataService';
+import { loadCaseIndex as loadCaseIndexService } from '@services/dataService';
+import type { CaseIndex } from '@types/index.types';
+import type { CaseSummary } from '@types/case.types';
 
 interface CasesState {
   index: CaseIndex | null;
@@ -67,7 +68,7 @@ const initialState: CasesState = {
 export const loadCaseIndex = createAsyncThunk(
   'cases/loadIndex',
   async () => {
-    return await dataService.loadCaseIndex();
+    return await loadCaseIndexService();
   }
 );
 
@@ -176,8 +177,8 @@ export default casesSlice.reducer;
 ```typescript
 // store/documentsSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { dataService } from '../services/dataService';
-import type { Document } from '../services/dataService';
+import { loadCaseDocuments as loadCaseDocumentsService } from '@services/dataService';
+import type { Document } from '@types/document.types';
 
 interface DocumentsState {
   documents: Record<number, Document[]>; // Keyed by case ID
@@ -198,7 +199,7 @@ const initialState: DocumentsState = {
 export const loadDocuments = createAsyncThunk(
   'documents/load',
   async (caseId: number) => {
-    const docs = await dataService.loadCaseDocuments(caseId);
+    const docs = await loadCaseDocumentsService(caseId);
     return { caseId, documents: docs };
   }
 );
@@ -308,8 +309,7 @@ import casesReducer, { loadCaseIndex, setSearchTerm } from './casesSlice';
 
 // Mock the data service
 jest.mock('../services/dataService', () => ({
-  dataService: {
-    loadCaseIndex: async () => ({
+  loadCaseIndex: async () => ({
       cases: [
         { id: 1, name: 'Test v. Example', court: 'test', filed: '2023-01-01' },
         { id: 2, name: 'Demo v. Sample', court: 'demo', filed: '2023-02-01' }

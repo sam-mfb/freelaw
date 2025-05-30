@@ -266,7 +266,7 @@ export const DocumentView: React.FC<DocumentViewProps> = ({ caseId }) => {
 ```typescript
 import React from 'react';
 import { useAppSelector } from '../hooks/redux';
-import { pdfService } from '../services/pdfService';
+import { openPDF } from '@services/pdfService';
 
 interface DocumentListProps {
   caseId: number;
@@ -277,7 +277,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({ caseId }) => {
   const { documentListView } = useAppSelector(state => state.ui);
   
   const handleOpenPDF = (filePath: string) => {
-    pdfService.openPDF(filePath);
+    openPDF(filePath);
   };
   
   if (loading) {
