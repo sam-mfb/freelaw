@@ -1,6 +1,5 @@
 import { CaseSummary } from './case.types';
 import { Court } from './court.types';
-import { Document } from './document.types';
 
 export interface CaseIndex {
   cases: CaseSummary[];

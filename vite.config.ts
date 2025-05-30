@@ -6,13 +6,13 @@ const dataRoot = process.env.USE_SAMPLE_DATA === 'true' ? './sample-data' : './d
 
 export default defineConfig({
   plugins: [react()],
-  
+
   server: {
     port: 3000,
     host: '0.0.0.0',
     fs: {
       // Allow serving files outside of project root
-      allow: ['..']
+      allow: ['..'],
     },
     proxy: {
       // Proxy requests for original docket JSON files
@@ -23,7 +23,7 @@ export default defineConfig({
           proxy.on('proxyReq', (proxyReq) => {
             proxyReq.removeHeader('origin');
           });
-        }
+        },
       },
       // Proxy requests for PDF files
       '/data/sata': {
@@ -36,11 +36,11 @@ export default defineConfig({
           proxy.on('proxyRes', (proxyRes) => {
             proxyRes.headers['content-type'] = 'application/pdf';
           });
-        }
-      }
-    }
+        },
+      },
+    },
   },
-  
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -50,7 +50,7 @@ export default defineConfig({
       '@store': path.resolve(__dirname, './src/store'),
       '@components': path.resolve(__dirname, './src/components'),
       '@hooks': path.resolve(__dirname, './src/hooks'),
-      '@utils': path.resolve(__dirname, './src/utils')
-    }
-  }
+      '@utils': path.resolve(__dirname, './src/utils'),
+    },
+  },
 });
