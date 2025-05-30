@@ -33,6 +33,7 @@ export default defineConfig({
           }
         });
         
+        // Handle PDF requests - "sata" refers to the SATA storage system used by RECAP archive
         server.middlewares.use('/data/sata', async (req, res, next) => {
           if (debugMiddleware) {
             console.log(`[PDF Middleware] Request for: ${req.url}`);

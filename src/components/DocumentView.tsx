@@ -28,7 +28,7 @@ export const DocumentView: React.FC<DocumentViewProps> = ({ caseId }) => {
         </div>
       </header>
       
-      <DocumentList caseId={caseId} />
+      <DocumentList />
     </div>
   );
 };

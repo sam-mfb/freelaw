@@ -2,11 +2,7 @@ import React from 'react';
 import { useAppSelector } from '../hooks/redux';
 import { createPDFService } from '../services/pdfService';
 
-interface DocumentListProps {
-  caseId: number;
-}
-
-export const DocumentList: React.FC<DocumentListProps> = () => {
+export const DocumentList: React.FC = () => {
   const { currentDocuments, loading } = useAppSelector(state => state.documents);
   const { documentListView } = useAppSelector(state => state.ui);
   

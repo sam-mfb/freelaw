@@ -5,7 +5,6 @@ import { CaseList } from './CaseList';
 import { DocumentView } from './DocumentView';
 
 export const Layout: React.FC = () => {
-  const { sidebarOpen } = useAppSelector(state => state.ui);
   const { selectedCaseId } = useAppSelector(state => state.cases);
   
   return (
@@ -15,7 +14,7 @@ export const Layout: React.FC = () => {
       </header>
       
       <div className="app-body">
-        <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <aside className="sidebar">
           <CaseSearch />
           <CaseList />
         </aside>
