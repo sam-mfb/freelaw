@@ -13,16 +13,18 @@ describe('DataService - Default Instance', () => {
 
   test('loadCaseIndex - success', async () => {
     const mockIndex = {
-      cases: [{
-        id: 1,
-        name: 'Test Case',
-        nameShort: 'Test',
-        court: 'test',
-        filed: '2023-01-01',
-        terminated: null,
-        docCount: 5,
-        availCount: 3
-      }],
+      cases: [
+        {
+          id: 1,
+          name: 'Test Case',
+          nameShort: 'Test',
+          court: 'test',
+          filed: '2023-01-01',
+          terminated: null,
+          docCount: 5,
+          availCount: 3,
+        },
+      ],
       courts: [{ code: 'test', name: 'Test Court' }],
       dateRange: { min: '2020-01-01', max: '2023-12-31' },
     };
@@ -61,7 +63,9 @@ describe('DataService - Default Instance', () => {
       statusText: 'Not Found',
     });
 
-    await expect(dataService.loadCaseIndex()).rejects.toThrow('Failed to load case index: Not Found');
+    await expect(dataService.loadCaseIndex()).rejects.toThrow(
+      'Failed to load case index: Not Found',
+    );
   });
 
   test('loadCaseIndex - handles invalid data format', async () => {
@@ -70,21 +74,25 @@ describe('DataService - Default Instance', () => {
       json: async () => ({ invalid: 'data' }),
     });
 
-    await expect(dataService.loadCaseIndex()).rejects.toThrow('Invalid case index format received from server');
+    await expect(dataService.loadCaseIndex()).rejects.toThrow(
+      'Invalid case index format received from server',
+    );
   });
 
   test('loadCaseDocuments - success', async () => {
-    const mockDocs = [{
-      id: 1,
-      entryNumber: 1,
-      documentNumber: '1',
-      description: 'Test Document',
-      dateFiled: '2023-01-01',
-      pageCount: 10,
-      fileSize: 1000,
-      filePath: '/path/to/doc.pdf',
-      sha1: 'abcd1234'
-    }];
+    const mockDocs = [
+      {
+        id: 1,
+        entryNumber: 1,
+        documentNumber: '1',
+        description: 'Test Document',
+        dateFiled: '2023-01-01',
+        pageCount: 10,
+        fileSize: 1000,
+        filePath: '/path/to/doc.pdf',
+        sha1: 'abcd1234',
+      },
+    ];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -97,17 +105,19 @@ describe('DataService - Default Instance', () => {
   });
 
   test('loadCaseDocuments - caches result', async () => {
-    const mockDocs = [{
-      id: 1,
-      entryNumber: 1,
-      documentNumber: '1',
-      description: 'Test Document',
-      dateFiled: '2023-01-01',
-      pageCount: 10,
-      fileSize: 1000,
-      filePath: '/path/to/doc.pdf',
-      sha1: 'abcd1234'
-    }];
+    const mockDocs = [
+      {
+        id: 1,
+        entryNumber: 1,
+        documentNumber: '1',
+        description: 'Test Document',
+        dateFiled: '2023-01-01',
+        pageCount: 10,
+        fileSize: 1000,
+        filePath: '/path/to/doc.pdf',
+        sha1: 'abcd1234',
+      },
+    ];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -126,7 +136,9 @@ describe('DataService - Default Instance', () => {
       statusText: 'Not Found',
     });
 
-    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Failed to load documents for case 123');
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow(
+      'Failed to load documents for case 123',
+    );
   });
 
   test('loadCaseDocuments - handles invalid data format', async () => {
@@ -135,7 +147,9 @@ describe('DataService - Default Instance', () => {
       json: async () => ({ invalid: 'data' }),
     });
 
-    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Invalid documents format received for case 123');
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow(
+      'Invalid documents format received for case 123',
+    );
   });
 
   test('loadFullCase - success', async () => {
@@ -157,17 +171,17 @@ describe('DataService - Default Instance', () => {
               id: 1,
               document_number: '1',
               is_available: true,
-              filepath_local: 'path/to/doc.pdf'
+              filepath_local: 'path/to/doc.pdf',
             },
             {
               id: 2,
               document_number: '2',
               is_available: false,
-              filepath_local: null
-            }
-          ]
-        }
-      ]
+              filepath_local: null,
+            },
+          ],
+        },
+      ],
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -176,7 +190,7 @@ describe('DataService - Default Instance', () => {
     });
 
     const result = await dataService.loadFullCase(123);
-    
+
     expect(result).toEqual({
       id: 123,
       caseName: 'Test Case Name',
@@ -190,14 +204,14 @@ describe('DataService - Default Instance', () => {
       documentCount: 1,
       availableDocumentCount: 1,
     });
-    
+
     expect(mockFetch).toHaveBeenCalledWith('/data/docket-data/123.json');
   });
 
   test('loadFullCase - handles missing fields', async () => {
     const mockRawCase = {
       id: 123,
-      docket_entries: []
+      docket_entries: [],
     };
 
     mockFetch.mockResolvedValueOnce({
@@ -206,7 +220,7 @@ describe('DataService - Default Instance', () => {
     });
 
     const result = await dataService.loadFullCase(123);
-    
+
     expect(result).toEqual({
       id: 123,
       caseName: '',
@@ -224,17 +238,19 @@ describe('DataService - Default Instance', () => {
 
   test('clearCache - clears all caches', async () => {
     const mockIndex = { cases: [], courts: [], dateRange: { min: '', max: '' } };
-    const mockDocs = [{
-      id: 1,
-      entryNumber: 1,
-      documentNumber: '1',
-      description: 'Test',
-      dateFiled: '2023-01-01',
-      pageCount: 10,
-      fileSize: 1000,
-      filePath: '/path/to/doc.pdf',
-      sha1: 'abcd1234'
-    }];
+    const mockDocs = [
+      {
+        id: 1,
+        entryNumber: 1,
+        documentNumber: '1',
+        description: 'Test',
+        dateFiled: '2023-01-01',
+        pageCount: 10,
+        fileSize: 1000,
+        filePath: '/path/to/doc.pdf',
+        sha1: 'abcd1234',
+      },
+    ];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -243,12 +259,12 @@ describe('DataService - Default Instance', () => {
 
     // Load data to populate cache
     await dataService.loadCaseIndex();
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockDocs,
     });
-    
+
     await dataService.loadCaseDocuments(123);
 
     // Clear cache
@@ -260,7 +276,7 @@ describe('DataService - Default Instance', () => {
       json: async () => mockIndex,
     });
     await dataService.loadCaseIndex();
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockDocs,
@@ -281,16 +297,18 @@ describe('DataService - Factory Function', () => {
     const service2 = createDataService();
 
     const mockIndex = {
-      cases: [{
-        id: 1,
-        name: 'Test Case',
-        nameShort: 'Test',
-        court: 'test',
-        filed: '2023-01-01',
-        terminated: null,
-        docCount: 5,
-        availCount: 3
-      }],
+      cases: [
+        {
+          id: 1,
+          name: 'Test Case',
+          nameShort: 'Test',
+          court: 'test',
+          filed: '2023-01-01',
+          terminated: null,
+          docCount: 5,
+          availCount: 3,
+        },
+      ],
       courts: [],
       dateRange: { min: '', max: '' },
     };

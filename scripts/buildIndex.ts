@@ -32,7 +32,6 @@ async function readJsonFile(filePath: string): Promise<RawCaseData | null> {
   }
 }
 
-
 async function buildIndices(config: BuildConfig): Promise<void> {
   console.log('Starting index build...');
   console.log(`Reading JSON files from: ${config.jsonDir}`);
@@ -139,4 +138,3 @@ async function main() {
 }
 
 main().catch(console.error);
-

@@ -16,7 +16,9 @@ function App() {
         <li>Phase 5: Redux Store (store/)</li>
         <li>Phase 6: React Components (components/)</li>
       </ul>
-      <p>Each phase can be developed independently. Check the planning/ directory for instructions.</p>
+      <p>
+        Each phase can be developed independently. Check the planning/ directory for instructions.
+      </p>
     </div>
   );
 }
@@ -24,5 +26,5 @@ function App() {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
