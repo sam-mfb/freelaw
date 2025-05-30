@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vite Config Test</title>
+  </head>
+  <body>
+    <h2>Vite Configuration Test</h2>
+    <div id="test-results"></div>
+
+    <script type="module">
+      const tests = [
+        {
+          url: "/data/case-index.json",
+          desc: "Index from public/data",
+          check: async (r) => r.ok && (await r.json()).cases,
+        },
+        {
+          url: "/data/documents/14560346.json",
+          desc: "Document index",
+          check: async (r) => r.ok && Array.isArray(await r.json()),
+        },
+        {
+          url: "/data/docket-data/14560346.json",
+          desc: "Original JSON",
+          check: async (r) => r.ok && (await r.json()).id === 14560346,
+        },
+        {
+          url: "/data/sata/recap/gov.uscourts.kyed.88372/gov.uscourts.kyed.88372.1.0.pdf",
+          desc: "PDF file",
+          check: async (r) =>
+            r.ok && r.headers.get("content-type").includes("pdf"),
+        },
+      ];
+
+      const results = document.getElementById("test-results");
+
+      for (const test of tests) {
+        try {
+          const response = await fetch(test.url);
+          const passed = await test.check(response);
+          const status = passed ? "✅" : "❌";
+          results.innerHTML += `<p>${status} ${test.desc}: ${response.status}</p>`;
+        } catch (e) {
+          results.innerHTML += `<p>❌ ${test.desc}: ${e.message}</p>`;
+        }
+      }
+    </script>
+  </body>
+</html>
