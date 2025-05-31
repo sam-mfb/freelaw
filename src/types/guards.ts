@@ -1,7 +1,12 @@
 import type { RawCaseData, RawDocketEntry, RawRecapDocument, CaseIndex } from './index.types';
 import type { CaseSummary } from './case.types';
 import type { Court } from './court.types';
-import type { Document } from './document.types';
+import type {
+  Document,
+  DocumentSearchKeywords,
+  DocumentSearchResult,
+  SearchableDocument,
+} from './document.types';
 
 export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
   if (!obj || typeof obj !== 'object') {
@@ -24,7 +29,8 @@ export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
       doc.page_count === null ||
       typeof doc.page_count === 'number') &&
     (doc.file_size === undefined || doc.file_size === null || typeof doc.file_size === 'number') &&
-    (doc.sha1 === undefined || doc.sha1 === null || typeof doc.sha1 === 'string')
+    (doc.sha1 === undefined || doc.sha1 === null || typeof doc.sha1 === 'string') &&
+    (doc.attachment_number === undefined || doc.attachment_number === null || typeof doc.attachment_number === 'number')
   );
 }
 
@@ -187,4 +193,75 @@ export async function safeJsonParse(response: Response): Promise<unknown> {
       `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
   }
+}
+
+export function isDocumentSearchKeywords(data: unknown): data is DocumentSearchKeywords {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  return Array.isArray(obj.keywords) && obj.keywords.every((k: unknown) => typeof k === 'string');
+}
+
+export function isDocumentSearchResult(data: unknown): data is DocumentSearchResult {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  return (
+    typeof obj.keyword === 'string' &&
+    Array.isArray(obj.documentIds) &&
+    obj.documentIds.every((id: unknown) => typeof id === 'string')
+  );
+}
+
+export function isSearchableDocument(data: unknown): data is SearchableDocument {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.caseId === 'number' &&
+    typeof obj.documentNumber === 'string' &&
+    (obj.attachmentNumber === null || typeof obj.attachmentNumber === 'number') &&
+    typeof obj.description === 'string' &&
+    typeof obj.caseName === 'string' &&
+    typeof obj.court === 'string' &&
+    (obj.dateCreated === undefined || typeof obj.dateCreated === 'string') &&
+    (obj.filePath === undefined || typeof obj.filePath === 'string') &&
+    (obj.pageCount === undefined || typeof obj.pageCount === 'number') &&
+    (obj.fileSize === undefined || typeof obj.fileSize === 'number')
+  );
+}
+
+export function parseDocumentId(id: string): {
+  caseId: number;
+  documentNumber: string;
+  attachmentNumber: number | null;
+} {
+  const parts = id.split('-');
+  if (parts.length !== 3) {
+    throw new Error(`Invalid document ID format: ${id}`);
+  }
+
+  const caseId = parseInt(parts[0], 10);
+  const documentNumber = parts[1];
+  const attachmentNumber = parts[2] === 'null' ? null : parseInt(parts[2], 10);
+
+  if (isNaN(caseId)) {
+    throw new Error(`Invalid case ID in document ID: ${id}`);
+  }
+
+  if (attachmentNumber !== null && isNaN(attachmentNumber)) {
+    throw new Error(`Invalid attachment number in document ID: ${id}`);
+  }
+
+  return { caseId, documentNumber, attachmentNumber };
 }

@@ -22,9 +22,10 @@ export interface RawRecapDocument {
   description?: string;
   page_count?: number | null;
   file_size?: number | null;
-  filepath_local?: string;
+  filepath_local?: string | null;
   is_available: boolean;
   sha1?: string;
+  attachment_number?: number | null;
 }
 
 export interface RawDocketEntry {

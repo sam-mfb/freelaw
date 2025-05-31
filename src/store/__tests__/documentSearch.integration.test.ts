@@ -17,7 +17,7 @@ describe('Document Search Integration', () => {
     // Create store with mock services
     const mockServices: AppServices = {
       dataService: {
-        loadCaseIndex: async () => ({ cases: [], courts: [], dateRange: { start: '', end: '' } }),
+        loadCaseIndex: async () => ({ cases: [], courts: [], dateRange: { min: '', max: '' } }),
         loadCaseDocuments: async () => [],
       } as AppServices['dataService'],
       documentSearchService: {

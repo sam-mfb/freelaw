@@ -1,13 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { BuildConfig, RawCaseData, CaseIndex } from '../src/types/index.types';
-import type { Court } from '../src/types/court.types';
-import { COURT_MAPPINGS } from '../src/constants/courts';
+import type { BuildConfig, RawCaseData } from '../src/types/index.types';
 import { isRawCaseData } from '../src/types/guards';
-import { extractCaseSummary } from './extractCaseSummary';
-import { extractDocuments } from './extractDocuments';
 import { extractKeywords, createDocumentId } from './extractKeywords';
-import type { CaseSummary } from '@/types/case.types';
 
 async function ensureDirectoryExists(dirPath: string): Promise<void> {
   try {
@@ -48,7 +43,7 @@ function processDocumentsForKeywords(
       
       const documentId = createDocumentId(
         caseData.id,
-        doc.document_number ?? '0',
+        doc.document_number || '0',
         doc.attachment_number !== null && doc.attachment_number !== undefined 
           ? doc.attachment_number 
           : 'null'
@@ -98,95 +93,41 @@ async function writeDocumentSearchIndex(
     );
   }
   
-  console.log(`Document search index complete!`);
+  console.log(`\nDocument search index complete!`);
   console.log(`- Found ${allKeywords.length} unique keywords`);
   console.log(`- Indexed ${Array.from(keywordIndex.values()).reduce((sum, set) => sum + set.size, 0)} document references`);
 }
 
-async function buildIndices(config: BuildConfig): Promise<void> {
-  console.log('Starting index build...');
+async function buildDocumentSearchIndexStandalone(config: BuildConfig): Promise<void> {
+  console.log('Building document search index (standalone)...');
   console.log(`Reading JSON files from: ${config.jsonDir}`);
   console.log(`Output directory: ${config.outputDir}`);
-
-  const cases: CaseSummary[] = [];
-  const courtSet = new Set<string>();
+  
   const keywordIndex = new Map<string, Set<string>>();
-  let minDate: string | null = null;
-  let maxDate: string | null = null;
-
-  await ensureDirectoryExists(config.outputDir);
-  await ensureDirectoryExists(path.join(config.outputDir, 'documents'));
-
+  
   const files = await fs.readdir(config.jsonDir);
-  const jsonFiles = files.filter((f) => f.endsWith('.json'));
-
+  const jsonFiles = files.filter(f => f.endsWith('.json'));
+  
   console.log(`Found ${jsonFiles.length} JSON files to process`);
-
+  
   let processedCount = 0;
   for (const file of jsonFiles) {
     const filePath = path.join(config.jsonDir, file);
     const caseData = await readJsonFile(filePath);
-
-    if (!caseData) {
-      continue;
-    }
-
-    const caseSummary = extractCaseSummary(caseData);
-    cases.push(caseSummary);
-
-    if (caseSummary.court) {
-      courtSet.add(caseSummary.court);
-    }
-
-    if (caseSummary.filed) {
-      if (!minDate || caseSummary.filed < minDate) {
-        minDate = caseSummary.filed;
-      }
-      if (!maxDate || caseSummary.filed > maxDate) {
-        maxDate = caseSummary.filed;
-      }
-    }
-
-    const documents = extractDocuments(caseData);
-    if (documents.length > 0) {
-      const docFilePath = path.join(config.outputDir, 'documents', `${caseData.id}.json`);
-      await fs.writeFile(docFilePath, JSON.stringify(documents, null, 2));
-    }
-
+    
+    if (!caseData) continue;
+    
     processDocumentsForKeywords(caseData, keywordIndex);
-
+    
     processedCount++;
     if (processedCount % 100 === 0) {
       console.log(`Processed ${processedCount}/${jsonFiles.length} files...`);
     }
   }
-
-  const courts: Court[] = Array.from(courtSet)
-    .sort()
-    .map((code) => ({
-      code,
-      name: COURT_MAPPINGS[code] || `Unknown Court (${code})`,
-    }));
-
-  const caseIndex: CaseIndex = {
-    cases: cases.sort((a, b) => a.id - b.id),
-    courts,
-    dateRange: {
-      min: minDate || '',
-      max: maxDate || '',
-    },
-  };
-
-  const indexPath = path.join(config.outputDir, 'case-index.json');
-  await fs.writeFile(indexPath, JSON.stringify(caseIndex, null, 2));
-
+  
   await writeDocumentSearchIndex(config, keywordIndex);
-
-  console.log(`\nIndex build complete!`);
-  console.log(`- Processed ${cases.length} cases`);
-  console.log(`- Found ${courts.length} unique courts`);
-  console.log(`- Date range: ${minDate} to ${maxDate}`);
-  console.log(`- Output written to: ${config.outputDir}`);
+  
+  console.log(`Processing complete! Processed ${processedCount} case files`);
 }
 
 async function main() {
@@ -206,9 +147,9 @@ async function main() {
   };
 
   try {
-    await buildIndices(config);
+    await buildDocumentSearchIndexStandalone(config);
   } catch (error) {
-    console.error('Error building indices:', error);
+    console.error('Error building document search index:', error);
     process.exit(1);
   }
 }
