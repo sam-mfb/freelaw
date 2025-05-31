@@ -1,7 +1,12 @@
 import type { RawCaseData, RawDocketEntry, RawRecapDocument, CaseIndex } from './index.types';
 import type { CaseSummary } from './case.types';
 import type { Court } from './court.types';
-import type { Document, DocumentSearchKeywords, DocumentSearchResult, SearchableDocument } from './document.types';
+import type {
+  Document,
+  DocumentSearchKeywords,
+  DocumentSearchResult,
+  SearchableDocument,
+} from './document.types';
 
 export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
   if (!obj || typeof obj !== 'object') {
@@ -183,7 +188,9 @@ export async function safeJsonParse(response: Response): Promise<unknown> {
   try {
     return (await response.json()) as unknown;
   } catch (error) {
-    throw new Error(`Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 }
 
@@ -193,11 +200,8 @@ export function isDocumentSearchKeywords(data: unknown): data is DocumentSearchK
   }
 
   const obj = data as Record<string, unknown>;
-  
-  return (
-    Array.isArray(obj.keywords) &&
-    obj.keywords.every((k: unknown) => typeof k === 'string')
-  );
+
+  return Array.isArray(obj.keywords) && obj.keywords.every((k: unknown) => typeof k === 'string');
 }
 
 export function isDocumentSearchResult(data: unknown): data is DocumentSearchResult {
@@ -206,7 +210,7 @@ export function isDocumentSearchResult(data: unknown): data is DocumentSearchRes
   }
 
   const obj = data as Record<string, unknown>;
-  
+
   return (
     typeof obj.keyword === 'string' &&
     Array.isArray(obj.documentIds) &&
@@ -220,7 +224,7 @@ export function isSearchableDocument(data: unknown): data is SearchableDocument 
   }
 
   const obj = data as Record<string, unknown>;
-  
+
   return (
     typeof obj.id === 'string' &&
     typeof obj.caseId === 'number' &&
@@ -236,19 +240,23 @@ export function isSearchableDocument(data: unknown): data is SearchableDocument 
   );
 }
 
-export function parseDocumentId(id: string): { caseId: number; documentNumber: string; attachmentNumber: number } {
+export function parseDocumentId(id: string): {
+  caseId: number;
+  documentNumber: string;
+  attachmentNumber: number;
+} {
   const parts = id.split('-');
   if (parts.length !== 3) {
     throw new Error(`Invalid document ID format: ${id}`);
   }
-  
+
   const caseId = parseInt(parts[0], 10);
   const documentNumber = parts[1];
   const attachmentNumber = parseInt(parts[2], 10);
-  
+
   if (isNaN(caseId) || isNaN(attachmentNumber)) {
     throw new Error(`Invalid document ID format: ${id}`);
   }
-  
+
   return { caseId, documentNumber, attachmentNumber };
 }

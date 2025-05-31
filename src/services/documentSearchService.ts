@@ -1,4 +1,8 @@
-import type { DocumentSearchKeywords, DocumentSearchResult, SearchableDocument } from '../types/document.types';
+import type {
+  DocumentSearchKeywords,
+  DocumentSearchResult,
+  SearchableDocument,
+} from '../types/document.types';
 
 export interface DocumentSearchService {
   loadKeywords(): Promise<string[]>;
@@ -18,27 +22,31 @@ function createDocumentSearchState(): DocumentSearchState {
   return {
     keywordsCache: null,
     keywordFilesCache: new Map<string, string[]>(),
-    documentsCache: new Map<string, SearchableDocument>()
+    documentsCache: new Map<string, SearchableDocument>(),
   };
 }
 
-function parseDocumentId(documentId: string): { caseId: number; documentNumber: string; attachmentNumber: number } {
+function parseDocumentId(documentId: string): {
+  caseId: number;
+  documentNumber: string;
+  attachmentNumber: number;
+} {
   const parts = documentId.split('-');
   if (parts.length !== 3) {
     throw new Error(`Invalid document ID format: ${documentId}`);
   }
-  
+
   return {
     caseId: parseInt(parts[0], 10),
     documentNumber: parts[1],
-    attachmentNumber: parseInt(parts[2], 10)
+    attachmentNumber: parseInt(parts[2], 10),
   };
 }
 
 async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDocument[]> {
   // Group document IDs by case ID for efficient loading
   const caseGroups = new Map<number, string[]>();
-  
+
   for (const id of documentIds) {
     const { caseId } = parseDocumentId(id);
     if (!caseGroups.has(caseId)) {
@@ -54,7 +62,7 @@ async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDoc
   for (const [caseId, docIds] of caseGroups.entries()) {
     for (const docId of docIds) {
       const { documentNumber, attachmentNumber } = parseDocumentId(docId);
-      
+
       // TODO: In real implementation, integrate with dataService.loadCaseDocuments
       // For testing purposes, create mock documents
       results.push({
@@ -68,7 +76,7 @@ async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDoc
         dateCreated: new Date().toISOString(),
         filePath: `${caseId}/${documentNumber}-${attachmentNumber}.pdf`,
         pageCount: 10,
-        fileSize: 1024 * 1024
+        fileSize: 1024 * 1024,
       });
     }
   }
@@ -87,7 +95,7 @@ export function createDocumentSearchService(): DocumentSearchService {
       throw new Error(`Failed to load keywords: ${response.statusText}`);
     }
 
-    const data = await response.json() as DocumentSearchKeywords;
+    const data = (await response.json()) as DocumentSearchKeywords;
     state.keywordsCache = data.keywords;
     return data.keywords;
   };
@@ -106,28 +114,29 @@ export function createDocumentSearchService(): DocumentSearchService {
       throw new Error(`Failed to load keyword '${keyword}': ${response.statusText}`);
     }
 
-    const data = await response.json() as DocumentSearchResult;
+    const data = (await response.json()) as DocumentSearchResult;
     state.keywordFilesCache.set(keyword, data.documentIds);
     return data.documentIds;
   };
 
-  const searchByMultipleKeywords = async (keywords: string[], operator: 'AND' | 'OR' = 'OR'): Promise<string[]> => {
+  const searchByMultipleKeywords = async (
+    keywords: string[],
+    operator: 'AND' | 'OR' = 'OR',
+  ): Promise<string[]> => {
     if (keywords.length === 0) return [];
     if (keywords.length === 1) return searchByKeyword(keywords[0]);
 
-    const results = await Promise.all(
-      keywords.map(keyword => searchByKeyword(keyword))
-    );
+    const results = await Promise.all(keywords.map((keyword) => searchByKeyword(keyword)));
 
     if (operator === 'AND') {
       // Intersection: documents that appear in ALL keyword results
-      return results.reduce((intersection, currentSet) => 
-        intersection.filter(id => currentSet.includes(id))
+      return results.reduce((intersection, currentSet) =>
+        intersection.filter((id) => currentSet.includes(id)),
       );
     } else {
       // Union: documents that appear in ANY keyword result
       const unionSet = new Set<string>();
-      results.forEach(result => result.forEach(id => unionSet.add(id)));
+      results.forEach((result) => result.forEach((id) => unionSet.add(id)));
       return Array.from(unionSet);
     }
   };
@@ -168,7 +177,7 @@ export function createDocumentSearchService(): DocumentSearchService {
     searchByKeyword,
     searchByMultipleKeywords,
     resolveDocuments,
-    clearCache
+    clearCache,
   };
 }
 
