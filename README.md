@@ -10,6 +10,7 @@ npm install
 
 # Build search indices from sample data
 npm run build:index:sample
+npm run build:document-search:sample
 
 # Start development server
 npm run dev:sample
@@ -19,12 +20,25 @@ Visit http://localhost:3000 to access the application.
 
 ## ✨ Features
 
+### Case Browsing
 - **Search 34,418+ legal cases** by case name, court, or docket number
 - **Browse documents** within each case with full metadata
-- **Open PDFs** directly in your browser
 - **Filter by court** using a comprehensive court directory
-- **Fast search** with pre-built client-side indices
-- **Responsive design** with sidebar navigation
+- **Open PDFs** directly in your browser
+
+### Document Search (New!)
+- **Keyword-based document search** across all documents in the archive
+- **Smart keyword suggestions** as you type
+- **AND/OR search operators** for precise or broad searches
+- **Highlighted search results** showing matched keywords
+- **Paginated results** with configurable page sizes
+- **Document metadata display** including case name, court, date, and file details
+
+### Performance & Design
+- **Fast client-side search** with pre-built indices
+- **Lazy-loaded keyword indices** for efficient memory usage
+- **Responsive design** with tabbed navigation
+- **Keyboard accessible** interface
 
 ## 🏗️ Architecture
 
@@ -32,32 +46,46 @@ The application follows a modular architecture with clear separation of concerns
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│ React Components│────▶│ Redux Store      │────▶│ Data Service    │
+│ React Components│────▶│ Redux Store      │────▶│ Data Services   │
 │ (UI Layer)      │     │ (State Mgmt)     │     │ (Data Access)   │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
          │                        │                        │
          ▼                        ▼                        ▼
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│ PDF Service     │     │ Type Guards      │     │ Index Files     │
-│ (PDF Handling)  │     │ (Type Safety)    │     │ (Pre-built)     │
+│ Search Services │     │ Type Guards      │     │ Index Files     │
+│ (Doc Search)    │     │ (Type Safety)    │     │ (Pre-built)     │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
 ### Core Components
 
-- **Layout** (`src/components/Layout.tsx`) - Main application layout
+#### Case Browsing
+- **Layout** (`src/components/Layout.tsx`) - Main application layout with tabbed navigation
 - **CaseSearch** - Search interface with filtering
 - **CaseList** - Displays filtered search results
 - **DocumentView** - Shows documents for selected case
 - **DocumentList** - Lists all documents with metadata
 
+#### Document Search
+- **DocumentSearch** - Main search interface container
+- **DocumentSearchKeywords** - Keyword input with auto-suggestions
+- **DocumentSearchResults** - Paginated results display with highlighting
+
 ### Data Flow
 
-1. **Build Time**: Index builder processes JSON files into searchable indices
+#### Case Browsing Flow
+1. **Build Time**: Index builder processes JSON files into case index
 2. **Load Time**: Data service loads case index into Redux store
 3. **Search Time**: User input filters cases client-side
 4. **Selection**: Clicking a case loads its documents via data service
 5. **Viewing**: Clicking a document opens the PDF in a new tab
+
+#### Document Search Flow
+1. **Build Time**: Keyword extractor analyzes document descriptions
+2. **Index Time**: Creates inverted index mapping keywords to document IDs
+3. **Search Time**: User selects keywords and search operator (AND/OR)
+4. **Results**: Lazy-loads matching keyword files and resolves document metadata
+5. **Display**: Shows paginated results with keyword highlighting
 
 ## 📁 Project Structure
 
@@ -66,23 +94,29 @@ freelaw/
 ├── src/
 │   ├── components/         # React UI components
 │   │   ├── App.tsx        # Root application component
-│   │   ├── Layout.tsx     # Main layout with sidebar
+│   │   ├── Layout.tsx     # Main layout with tabbed navigation
 │   │   ├── CaseSearch.tsx # Search and filter interface
 │   │   ├── CaseList.tsx   # Case results list
 │   │   ├── DocumentView.tsx # Document viewer for selected case
-│   │   └── DocumentList.tsx # Document list with metadata
+│   │   ├── DocumentList.tsx # Document list with metadata
+│   │   ├── DocumentSearch.tsx # Document search container
+│   │   ├── DocumentSearchKeywords.tsx # Keyword input component
+│   │   ├── DocumentSearchResults.tsx # Search results display
+│   │   └── DocumentSearch.css # Document search styles
 │   ├── services/           # Data access layer
 │   │   ├── dataService.ts  # Loads cases and documents
+│   │   ├── documentSearchService.ts # Document search functionality
 │   │   ├── pdfService.ts   # Handles PDF file operations
 │   │   └── types.ts        # Service type definitions
 │   ├── store/              # Redux store and slices
 │   │   ├── casesSlice.ts   # Case data and search state
 │   │   ├── documentsSlice.ts # Document data state
+│   │   ├── documentSearchSlice.ts # Document search state
 │   │   ├── uiSlice.ts      # UI state (selections, filters)
-│   │   └── index.ts        # Store configuration
+│   │   └── createAppStore.ts # Store configuration
 │   ├── types/              # TypeScript type definitions
 │   │   ├── case.types.ts   # Case and case summary types
-│   │   ├── document.types.ts # Document metadata types
+│   │   ├── document.types.ts # Document metadata and search types
 │   │   ├── court.types.ts  # Court code mappings
 │   │   ├── index.types.ts  # Index file structures
 │   │   └── guards.ts       # Runtime type validation
@@ -91,13 +125,18 @@ freelaw/
 │   └── hooks/
 │       └── redux.ts        # Typed Redux hooks
 ├── scripts/                # Build and utility scripts
-│   ├── buildIndex.ts       # Generates search indices
+│   ├── buildIndex.ts       # Generates case search indices
+│   ├── buildDocumentSearchIndex.ts # Generates document search indices
 │   ├── extractCaseSummary.ts # Extracts case metadata
-│   └── extractDocuments.ts # Extracts document lists
+│   ├── extractDocuments.ts # Extracts document lists
+│   └── extractKeywords.ts  # Extracts searchable keywords
 ├── public/
 │   └── data/               # Generated index files
 │       ├── case-index.json # Main case search index
-│       └── documents/      # Individual case document files
+│       ├── documents/      # Individual case document files
+│       └── document-search/ # Document search indices
+│           ├── keywords.json # Master keyword list
+│           └── keywords/    # Individual keyword index files
 ├── sample-data/            # Development data (10 cases)
 │   ├── docket-data/        # Sample JSON files
 │   └── sata/recap/         # Sample PDF files
@@ -140,8 +179,11 @@ npm run dev:sample       # Start with sample data (recommended)
 npm run dev:sample:debug # Start with debug middleware
 
 # Index building
-npm run build:index       # Build from production data
-npm run build:index:sample # Build from sample data
+npm run build:index       # Build case index from production data
+npm run build:index:sample # Build case index from sample data
+npm run build:document-search # Build document search index from production data
+npm run build:document-search:sample # Build document search index from sample data
+npm run build:index:full  # Build both indices for production
 
 # Code quality
 npm run lint             # Run ESLint
@@ -198,8 +240,10 @@ The application processes federal court data from the RECAP archive:
 - **Federal court coverage** across all districts
 
 ### Generated Indices
-- **case-index.json** - Searchable case summaries
-- **documents/*.json** - Document lists per case
+- **case-index.json** - Searchable case summaries (~5MB)
+- **documents/*.json** - Document lists per case (34K+ files)
+- **document-search/keywords.json** - Master keyword list
+- **document-search/keywords/*.json** - Inverted index files (one per keyword)
 - **Court mappings** - Human-readable court names
 
 ### Example Case Structure
@@ -217,11 +261,21 @@ The application processes federal court data from the RECAP archive:
 
 ## 🔍 Search Features
 
+### Case Search
 - **Text search** across case names and docket numbers
 - **Court filtering** with dropdown selection
 - **Real-time results** with client-side filtering
 - **Case selection** loads full document list
 - **PDF viewing** opens documents in browser
+
+### Document Search
+- **Keyword-based search** across all document descriptions
+- **Auto-complete suggestions** from extracted keywords
+- **Boolean operators** (AND/OR) for complex queries
+- **Result highlighting** shows matched keywords
+- **Pagination controls** for managing large result sets
+- **Metadata display** for each found document
+- **Direct PDF access** from search results
 
 ## 🌐 Browser Support
 
@@ -251,7 +305,11 @@ The application processes federal court data from the RECAP archive:
 For development, use the sample dataset (10 cases) instead of the full 34K+ case collection:
 
 ```bash
+# Build both search indices from sample data
 npm run build:index:sample
+npm run build:document-search:sample
+
+# Start development server
 npm run dev:sample
 ```
 
@@ -273,6 +331,30 @@ Enable debug middleware to log data loading:
 
 ```bash
 npm run dev:sample:debug
+```
+
+### Document Search Implementation
+
+The document search feature uses an inverted index for efficient keyword-based searching:
+
+1. **Keyword Extraction**: Analyzes document descriptions to extract meaningful terms
+2. **Index Structure**: Creates individual JSON files for each keyword
+3. **Lazy Loading**: Only loads keyword files when searched
+4. **Memory Efficient**: Caches recently searched keywords
+5. **Search Operators**: Supports AND (intersection) and OR (union) operations
+
+Example keyword index structure:
+```json
+// public/data/document-search/keywords.json
+{
+  "keywords": ["motion", "deposition", "order", "summary", "judgment"]
+}
+
+// public/data/document-search/keywords/motion.json
+{
+  "keyword": "motion",
+  "documentIds": ["100877-1-0", "234561-5-0", "789012-3-0"]
+}
 ```
 
 ## 📄 Related Documentation
