@@ -1,127 +1,260 @@
 import { promises as fs } from 'fs';
-import path from 'path';
+import * as path from 'path';
+import * as os from 'os';
 import { performance } from 'perf_hooks';
-import { extractKeywords, createDocumentId } from './extractKeywords';
-import type { RawCaseData } from '../src/types/index.types';
+import { extractKeywords } from './extractKeywords';
+import { extractCaseSummary } from './extractCaseSummary';
+import { extractDocuments, type CaseContext } from './extractDocuments';
+import { COURT_MAPPINGS } from '../src/constants/courts';
+import type { CaseIndex } from '../src/types/index.types';
+import type { CaseSummary } from '../src/types/case.types';
+import type { Court } from '../src/types/court.types';
+import { ensureDirectoryExists, readJsonFile } from './utils';
 
 interface PerformanceMetrics {
   totalTime: number;
-  fileReadTime: number;
-  parseTime: number;
+  fileProcessingTime: number;
+  caseExtractionTime: number;
+  documentExtractionTime: number;
   keywordExtractionTime: number;
-  indexBuildTime: number;
-  fileWriteTime: number;
-  memoryUsed: number;
+  documentWriteTime: number;
+  indexWriteTime: number;
+  peakMemoryUsed: number;
+  currentMemoryUsed: number;
   caseCount: number;
   documentCount: number;
   uniqueKeywordCount: number;
-  indexSize: number;
+  totalIndexSize: number;
+  caseIndexSize: number;
+  documentFilesSize: number;
+  keywordIndexSize: number;
+}
+
+// Helper to build keyword index from documents
+function buildKeywordIndexFromDocuments(
+  documents: ReturnType<typeof extractDocuments>,
+  keywordIndex: Map<string, Set<string>>,
+): void {
+  for (const doc of documents) {
+    if (!doc.description) continue;
+
+    const keywords = extractKeywords(doc.description);
+
+    for (const keyword of keywords) {
+      if (!keywordIndex.has(keyword)) {
+        keywordIndex.set(keyword, new Set());
+      }
+      keywordIndex.get(keyword)!.add(doc.searchId);
+    }
+  }
 }
 
 async function measureIndexBuildPerformance(dataDir: string): Promise<PerformanceMetrics> {
   const startTime = performance.now();
   const startMemory = process.memoryUsage().heapUsed;
-  
+  let peakMemory = startMemory;
+
+  // Function to update peak memory
+  const updatePeakMemory = () => {
+    const currentMemory = process.memoryUsage().heapUsed;
+    if (currentMemory > peakMemory) {
+      peakMemory = currentMemory;
+    }
+  };
+
+  // Track memory usage periodically
+  const memoryInterval = setInterval(updatePeakMemory, 10); // Check every 10ms for better accuracy
+
   const metrics: PerformanceMetrics = {
     totalTime: 0,
-    fileReadTime: 0,
-    parseTime: 0,
+    fileProcessingTime: 0,
+    caseExtractionTime: 0,
+    documentExtractionTime: 0,
     keywordExtractionTime: 0,
-    indexBuildTime: 0,
-    fileWriteTime: 0,
-    memoryUsed: 0,
+    documentWriteTime: 0,
+    indexWriteTime: 0,
+    peakMemoryUsed: 0,
+    currentMemoryUsed: 0,
     caseCount: 0,
     documentCount: 0,
     uniqueKeywordCount: 0,
-    indexSize: 0
+    totalIndexSize: 0,
+    caseIndexSize: 0,
+    documentFilesSize: 0,
+    keywordIndexSize: 0,
   };
 
-  // Step 1: Read JSON files
-  const readStartTime = performance.now();
+  const outputDir = path.join(dataDir, 'test-output');
+  const documentsDir = path.join(outputDir, 'documents');
+  const searchDir = path.join(outputDir, 'document-search');
+  const keywordsDir = path.join(searchDir, 'keywords');
+
+  // Clean up any existing test output
+  try {
+    await fs.rm(outputDir, { recursive: true, force: true });
+  } catch (error) {
+    // Ignore error if directory doesn't exist
+  }
+
+  await ensureDirectoryExists(outputDir);
+  await ensureDirectoryExists(documentsDir);
+  await ensureDirectoryExists(searchDir);
+  await ensureDirectoryExists(keywordsDir);
+
+  const cases: CaseSummary[] = [];
+  const courtSet = new Set<string>();
+  const keywordIndex = new Map<string, Set<string>>();
+  let minDate: string | null = null;
+  let maxDate: string | null = null;
+
   const jsonDir = path.join(dataDir, 'docket-data');
   const files = await fs.readdir(jsonDir);
-  const jsonFiles = files.filter(f => f.endsWith('.json'));
+  const jsonFiles = files.filter((f) => f.endsWith('.json'));
   metrics.caseCount = jsonFiles.length;
-  
-  const fileContents: string[] = [];
+
+  console.log(`Processing ${jsonFiles.length} JSON files...`);
+
+  let processedCount = 0;
+  let totalDocumentCount = 0;
+  let totalDocumentFileSize = 0;
+
+  const fileProcessingStartTime = performance.now();
+
+  // Process files one at a time (streaming approach)
   for (const file of jsonFiles) {
-    const content = await fs.readFile(path.join(jsonDir, file), 'utf-8');
-    fileContents.push(content);
-  }
-  metrics.fileReadTime = performance.now() - readStartTime;
+    const filePath = path.join(jsonDir, file);
+    const caseData = await readJsonFile(filePath);
 
-  // Step 2: Parse JSON
-  const parseStartTime = performance.now();
-  const cases: RawCaseData[] = [];
-  for (const content of fileContents) {
-    cases.push(JSON.parse(content));
-  }
-  metrics.parseTime = performance.now() - parseStartTime;
+    if (!caseData) {
+      continue;
+    }
 
-  // Step 3: Extract keywords and build index
-  const keywordStartTime = performance.now();
-  const keywordIndex = new Map<string, Set<string>>();
-  let documentCount = 0;
+    // Extract case summary
+    const caseExtractionStart = performance.now();
+    const caseSummary = extractCaseSummary(caseData);
+    cases.push(caseSummary);
+    metrics.caseExtractionTime += performance.now() - caseExtractionStart;
+    updatePeakMemory(); // Check memory after case extraction
 
-  for (const caseData of cases) {
-    const entries = (caseData as any).docket_entries;
-    if (!entries) continue;
-    
-    for (const entry of entries) {
-      if (!entry.recap_documents) continue;
-      
-      for (const doc of entry.recap_documents) {
-        if (!doc.is_available || !doc.description) continue;
-        
-        documentCount++;
-        const keywords = extractKeywords(doc.description);
-        
-        const documentId = createDocumentId(
-          caseData.id,
-          doc.document_number ?? '0',
-          doc.attachment_number ?? 'null'
-        );
-        
-        for (const keyword of keywords) {
-          if (!keywordIndex.has(keyword)) {
-            keywordIndex.set(keyword, new Set());
-          }
-          keywordIndex.get(keyword)!.add(documentId);
-        }
+    if (caseSummary.court) {
+      courtSet.add(caseSummary.court);
+    }
+
+    if (caseSummary.filed) {
+      if (!minDate || caseSummary.filed < minDate) {
+        minDate = caseSummary.filed;
+      }
+      if (!maxDate || caseSummary.filed > maxDate) {
+        maxDate = caseSummary.filed;
       }
     }
-  }
-  
-  metrics.documentCount = documentCount;
-  metrics.uniqueKeywordCount = keywordIndex.size;
-  metrics.keywordExtractionTime = performance.now() - keywordStartTime;
 
-  // Step 4: Build final index structure (convert Sets to Arrays)
-  const indexStartTime = performance.now();
-  const keywordFiles: Record<string, any> = {};
-  
-  for (const [keyword, documentIds] of keywordIndex.entries()) {
-    keywordFiles[keyword] = {
-      keyword,
-      documentIds: Array.from(documentIds).sort()
+    // Extract documents and write immediately
+    const documentExtractionStart = performance.now();
+    const caseContext: CaseContext = {
+      caseId: caseData.id,
+      caseName: caseSummary.name,
+      court: caseSummary.court || 'unknown',
     };
-  }
-  
-  const finalIndex = {
-    keywordsIndex: { keywords: Array.from(keywordIndex.keys()).sort() },
-    keywordFiles
-  };
-  metrics.indexBuildTime = performance.now() - indexStartTime;
 
-  // Step 5: Measure serialized size (simulate file write)
-  const writeStartTime = performance.now();
-  const serializedIndex = JSON.stringify(finalIndex);
-  metrics.indexSize = Buffer.byteLength(serializedIndex, 'utf8');
-  metrics.fileWriteTime = performance.now() - writeStartTime;
+    const documents = extractDocuments(caseData, caseContext);
+    metrics.documentExtractionTime += performance.now() - documentExtractionStart;
+
+    if (documents.length > 0) {
+      const documentWriteStart = performance.now();
+      const docFilePath = path.join(documentsDir, `${caseData.id}.json`);
+      const docContent = JSON.stringify(documents, null, 2);
+      await fs.writeFile(docFilePath, docContent);
+      totalDocumentFileSize += Buffer.byteLength(docContent, 'utf8');
+      totalDocumentCount += documents.length;
+      metrics.documentWriteTime += performance.now() - documentWriteStart;
+    }
+
+    // Process keywords using the already extracted documents
+    const keywordExtractionStart = performance.now();
+    buildKeywordIndexFromDocuments(documents, keywordIndex);
+    metrics.keywordExtractionTime += performance.now() - keywordExtractionStart;
+    updatePeakMemory(); // Check memory after keyword extraction
+
+    processedCount++;
+    if (processedCount % 100 === 0) {
+      console.log(`Processed ${processedCount}/${jsonFiles.length} files...`);
+    }
+  }
+
+  metrics.fileProcessingTime = performance.now() - fileProcessingStartTime;
+  metrics.documentCount = totalDocumentCount;
+  metrics.documentFilesSize = totalDocumentFileSize;
+
+  // Build and write final indices
+  const indexWriteStart = performance.now();
+
+  // Write case index
+  const courts: Court[] = Array.from(courtSet)
+    .sort()
+    .map((code) => ({
+      code,
+      name: COURT_MAPPINGS[code] || `Unknown Court (${code})`,
+    }));
+
+  const caseIndex: CaseIndex = {
+    cases: cases.sort((a, b) => a.id - b.id),
+    courts,
+    dateRange: {
+      min: minDate || '',
+      max: maxDate || '',
+    },
+  };
+
+  const indexPath = path.join(outputDir, 'case-index.json');
+  const caseIndexContent = JSON.stringify(caseIndex, null, 2);
+  await fs.writeFile(indexPath, caseIndexContent);
+  metrics.caseIndexSize = Buffer.byteLength(caseIndexContent, 'utf8');
+
+  // Write keyword indices
+  const allKeywords = Array.from(keywordIndex.keys()).sort();
+  metrics.uniqueKeywordCount = allKeywords.length;
+
+  const keywordsFile = {
+    keywords: allKeywords,
+  };
+
+  const keywordsIndexContent = JSON.stringify(keywordsFile, null, 2);
+  await fs.writeFile(path.join(searchDir, 'keywords.json'), keywordsIndexContent);
+
+  let keywordFilesSize = Buffer.byteLength(keywordsIndexContent, 'utf8');
+
+  for (const [keyword, documentIds] of Array.from(keywordIndex.entries())) {
+    const keywordFile = {
+      keyword,
+      documentIds: Array.from(documentIds).sort(),
+    };
+
+    const keywordFileContent = JSON.stringify(keywordFile, null, 2);
+    await fs.writeFile(path.join(keywordsDir, `${keyword}.json`), keywordFileContent);
+    keywordFilesSize += Buffer.byteLength(keywordFileContent, 'utf8');
+  }
+
+  metrics.keywordIndexSize = keywordFilesSize;
+  metrics.indexWriteTime = performance.now() - indexWriteStart;
+
+  // Final memory check
+  updatePeakMemory();
 
   // Calculate totals
+  clearInterval(memoryInterval);
   metrics.totalTime = performance.now() - startTime;
-  metrics.memoryUsed = process.memoryUsage().heapUsed - startMemory;
+  metrics.currentMemoryUsed = process.memoryUsage().heapUsed - startMemory;
+  metrics.peakMemoryUsed = peakMemory - startMemory;
+  metrics.totalIndexSize =
+    metrics.caseIndexSize + metrics.documentFilesSize + metrics.keywordIndexSize;
+
+  // Clean up test output
+  try {
+    await fs.rm(outputDir, { recursive: true, force: true });
+  } catch (error) {
+    console.error('Error cleaning up test output:', error);
+  }
 
   return metrics;
 }
@@ -130,12 +263,12 @@ function formatBytes(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB'];
   let size = bytes;
   let unitIndex = 0;
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-  
+
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
@@ -147,65 +280,98 @@ function formatTime(ms: number): string {
 }
 
 async function runPerformanceTest() {
-  console.log('Index Build Performance Test\n');
+  console.log('Index Build Performance Test (Accurate Streaming Implementation)\n');
   console.log('Testing with sample data...\n');
 
   try {
     const metrics = await measureIndexBuildPerformance('./sample-data');
-    
+
     console.log('Performance Metrics:');
     console.log('===================');
     console.log(`Total Time: ${formatTime(metrics.totalTime)}`);
-    console.log(`  - File Reading: ${formatTime(metrics.fileReadTime)} (${(metrics.fileReadTime / metrics.totalTime * 100).toFixed(1)}%)`);
-    console.log(`  - JSON Parsing: ${formatTime(metrics.parseTime)} (${(metrics.parseTime / metrics.totalTime * 100).toFixed(1)}%)`);
-    console.log(`  - Keyword Extraction: ${formatTime(metrics.keywordExtractionTime)} (${(metrics.keywordExtractionTime / metrics.totalTime * 100).toFixed(1)}%)`);
-    console.log(`  - Index Building: ${formatTime(metrics.indexBuildTime)} (${(metrics.indexBuildTime / metrics.totalTime * 100).toFixed(1)}%)`);
-    console.log(`  - Serialization: ${formatTime(metrics.fileWriteTime)} (${(metrics.fileWriteTime / metrics.totalTime * 100).toFixed(1)}%)`);
-    
+    console.log(
+      `  - File Processing: ${formatTime(metrics.fileProcessingTime)} (${((metrics.fileProcessingTime / metrics.totalTime) * 100).toFixed(1)}%)`,
+    );
+    console.log(`    - Case Extraction: ${formatTime(metrics.caseExtractionTime)}`);
+    console.log(`    - Document Extraction: ${formatTime(metrics.documentExtractionTime)}`);
+    console.log(`    - Keyword Extraction: ${formatTime(metrics.keywordExtractionTime)}`);
+    console.log(`    - Document Writing: ${formatTime(metrics.documentWriteTime)}`);
+    console.log(
+      `  - Index Writing: ${formatTime(metrics.indexWriteTime)} (${((metrics.indexWriteTime / metrics.totalTime) * 100).toFixed(1)}%)`,
+    );
+
     console.log('\nData Metrics:');
     console.log('=============');
     console.log(`Cases Processed: ${metrics.caseCount}`);
     console.log(`Documents Indexed: ${metrics.documentCount}`);
     console.log(`Unique Keywords: ${metrics.uniqueKeywordCount}`);
-    console.log(`Index Size: ${formatBytes(metrics.indexSize)}`);
-    console.log(`Memory Used: ${formatBytes(metrics.memoryUsed)}`);
-    
+    console.log(`Total Index Size: ${formatBytes(metrics.totalIndexSize)}`);
+    console.log(`  - Case Index: ${formatBytes(metrics.caseIndexSize)}`);
+    console.log(`  - Document Files: ${formatBytes(metrics.documentFilesSize)}`);
+    console.log(`  - Keyword Index: ${formatBytes(metrics.keywordIndexSize)}`);
+
+    console.log('\nMemory Usage:');
+    console.log('=============');
+    console.log(`Peak Memory Used: ${formatBytes(metrics.peakMemoryUsed)}`);
+    console.log(`Final Memory Used: ${formatBytes(metrics.currentMemoryUsed)}`);
+
     console.log('\nPerformance Rates:');
     console.log('==================');
     console.log(`Cases/second: ${(metrics.caseCount / (metrics.totalTime / 1000)).toFixed(2)}`);
-    console.log(`Documents/second: ${(metrics.documentCount / (metrics.totalTime / 1000)).toFixed(2)}`);
+    console.log(
+      `Documents/second: ${(metrics.documentCount / (metrics.totalTime / 1000)).toFixed(2)}`,
+    );
     console.log(`Avg time per case: ${formatTime(metrics.totalTime / metrics.caseCount)}`);
     console.log(`Avg time per document: ${formatTime(metrics.totalTime / metrics.documentCount)}`);
-    
+
     // Extrapolation to full dataset (34,000 cases)
     console.log('\nExtrapolation to Full Dataset (34,000 cases):');
     console.log('=============================================');
     const scaleFactor = 34000 / metrics.caseCount;
     const avgDocsPerCase = metrics.documentCount / metrics.caseCount;
     const estimatedDocuments = Math.round(avgDocsPerCase * 34000);
-    
+
     console.log(`Estimated documents: ${estimatedDocuments.toLocaleString()}`);
     console.log(`Estimated time: ${formatTime(metrics.totalTime * scaleFactor)}`);
-    console.log(`Estimated index size: ${formatBytes(metrics.indexSize * scaleFactor)}`);
-    console.log(`Estimated memory usage: ${formatBytes(metrics.memoryUsed * scaleFactor)}`);
-    
-    // Memory feasibility check
-    const totalSystemMemory = require('os').totalmem();
-    const estimatedMemoryNeeded = metrics.memoryUsed * scaleFactor;
-    const memoryPercentage = (estimatedMemoryNeeded / totalSystemMemory * 100).toFixed(1);
-    
+    console.log(`Estimated total index size: ${formatBytes(metrics.totalIndexSize * scaleFactor)}`);
+    console.log(`  - Case Index: ${formatBytes(metrics.caseIndexSize * scaleFactor)}`);
+    console.log(`  - Document Files: ${formatBytes(metrics.documentFilesSize * scaleFactor)}`);
+    console.log(`  - Keyword Index: ${formatBytes(metrics.keywordIndexSize * scaleFactor)}`);
+
+    // Memory feasibility check - using peak memory as the critical metric
+    const totalSystemMemory = os.totalmem();
+    // The keyword index is the main memory consumer that scales with dataset size
+    // Case summaries also scale but are much smaller
+    const estimatedPeakMemory = metrics.peakMemoryUsed * scaleFactor;
+    const peakMemoryPercentage = ((estimatedPeakMemory / totalSystemMemory) * 100).toFixed(1);
+
     console.log('\nMemory Feasibility:');
     console.log('==================');
     console.log(`System Memory: ${formatBytes(totalSystemMemory)}`);
-    console.log(`Estimated Memory Needed: ${formatBytes(estimatedMemoryNeeded)} (${memoryPercentage}%)`);
-    
-    if (estimatedMemoryNeeded > totalSystemMemory * 0.8) {
+    console.log(
+      `Estimated Peak Memory: ${formatBytes(estimatedPeakMemory)} (${peakMemoryPercentage}%)`,
+    );
+
+    // More nuanced analysis
+    const keywordIndexMemory = (metrics.keywordIndexSize / metrics.caseCount) * 34000 * 2; // 2x for in-memory structures
+    const caseSummariesMemory = (metrics.caseIndexSize / metrics.caseCount) * 34000;
+    const workingMemory = 500 * 1024 * 1024; // 500MB working memory
+    const totalEstimatedMemory = keywordIndexMemory + caseSummariesMemory + workingMemory;
+
+    console.log(`\nDetailed Memory Breakdown:`);
+    console.log(`  - Keyword Index (in-memory): ${formatBytes(keywordIndexMemory)}`);
+    console.log(`  - Case Summaries: ${formatBytes(caseSummariesMemory)}`);
+    console.log(`  - Working Memory: ${formatBytes(workingMemory)}`);
+    console.log(
+      `  - Total Estimated: ${formatBytes(totalEstimatedMemory)} (${((totalEstimatedMemory / totalSystemMemory) * 100).toFixed(1)}%)`,
+    );
+
+    if (totalEstimatedMemory > totalSystemMemory * 0.8) {
       console.log('\n⚠️  WARNING: Estimated memory usage exceeds 80% of system memory.');
-      console.log('   Incremental indexing is recommended.');
+      console.log('   Consider chunking the keyword index build or using a streaming approach.');
     } else {
       console.log('\n✓ Memory usage appears feasible for single-pass indexing.');
     }
-    
   } catch (error) {
     console.error('Performance test failed:', error);
     process.exit(1);
@@ -214,3 +380,4 @@ async function runPerformanceTest() {
 
 // Run the test
 runPerformanceTest();
+
