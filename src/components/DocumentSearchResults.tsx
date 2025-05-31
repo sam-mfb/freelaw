@@ -1,19 +1,16 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
-  selectDocument,
   setCurrentPage,
   setResultsPerPage,
   selectPaginatedResults,
   selectCurrentSearch,
-  selectSelectedDocument,
 } from '../store/documentSearchSlice';
-import type { SearchableDocument } from '../types/document.types';
+import { getPdfPath } from '../constants/paths';
 
 export const DocumentSearchResults: React.FC = () => {
   const dispatch = useAppDispatch();
   const { keywords, operator } = useAppSelector(selectCurrentSearch);
-  const selectedDocument = useAppSelector(selectSelectedDocument);
   const {
     results,
     totalResults,
@@ -23,10 +20,6 @@ export const DocumentSearchResults: React.FC = () => {
     hasNextPage,
     hasPreviousPage,
   } = useAppSelector(selectPaginatedResults);
-
-  const handleSelectDocument = (document: SearchableDocument): void => {
-    dispatch(selectDocument(document.searchId));
-  };
 
   const handlePageChange = (page: number): void => {
     dispatch(setCurrentPage(page));
@@ -71,16 +64,7 @@ export const DocumentSearchResults: React.FC = () => {
         {results.map((document) => (
           <div
             key={document.id}
-            className={`document-result-card ${selectedDocument?.searchId === document.searchId ? 'selected' : ''}`}
-            onClick={() => handleSelectDocument(document)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleSelectDocument(document);
-              }
-            }}
+            className="document-result-card"
           >
             <div className="document-header">
               <h4 className="document-title">
@@ -113,6 +97,21 @@ export const DocumentSearchResults: React.FC = () => {
               {document.pageCount && <span>{document.pageCount} pages</span>}
               {document.fileSize && <span>{(document.fileSize / 1024).toFixed(1)} KB</span>}
             </div>
+            
+            {document.filePath && (
+              <div className="document-actions">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const path = getPdfPath(document.filePath);
+                    window.open(path, '_blank');
+                  }}
+                  className="btn btn-primary btn-sm"
+                >
+                  Open PDF
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -165,26 +164,6 @@ export const DocumentSearchResults: React.FC = () => {
               ⏭
             </button>
           </div>
-        </div>
-      )}
-
-      {selectedDocument && (
-        <div className="selected-document-preview">
-          <h4>Selected Document</h4>
-          <p>
-            <strong>Description:</strong> {selectedDocument.description}
-          </p>
-          <p>
-            <strong>Case:</strong> {selectedDocument.caseName}
-          </p>
-          {selectedDocument.filePath && (
-            <button
-              onClick={() => window.open(selectedDocument.filePath as string, '_blank')}
-              className="btn btn-primary"
-            >
-              Open PDF
-            </button>
-          )}
         </div>
       )}
     </div>
