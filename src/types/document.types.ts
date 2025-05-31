@@ -52,12 +52,9 @@ export interface DocumentSearchIndex {
   [keyword: string]: string[];
 }
 
-// SearchableDocument is now deprecated - use Document instead
-// Keeping type alias for backward compatibility during migration
-export type SearchableDocument = Document;
 
 export interface DocumentSearchCache {
   keywords: string[] | null;
   keywordFiles: Map<string, string[]>;
-  resolvedDocuments: Map<string, SearchableDocument>;
+  resolvedDocuments: Map<string, Document>;
 }

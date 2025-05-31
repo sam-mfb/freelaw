@@ -1,5 +1,5 @@
 import type { CaseIndex } from '../types/index.types';
-import type { Document, SearchableDocument } from '../types/document.types';
+import type { Document } from '../types/document.types';
 
 export interface AppServices {
   dataService: {
@@ -10,7 +10,7 @@ export interface AppServices {
     loadKeywords: () => Promise<string[]>;
     searchByKeyword: (keyword: string) => Promise<string[]>;
     searchByMultipleKeywords: (keywords: string[], operator: 'AND' | 'OR') => Promise<string[]>;
-    resolveDocuments: (documentIds: string[]) => Promise<SearchableDocument[]>;
+    resolveDocuments: (documentIds: string[]) => Promise<Document[]>;
     clearCache: () => void;
   };
 }

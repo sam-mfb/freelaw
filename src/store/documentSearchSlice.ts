@@ -1,6 +1,6 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import type { SearchableDocument } from '../types/document.types';
+import type { Document } from '../types/document.types';
 import type { ThunkExtra } from './types';
 import type { RootState } from './createAppStore';
 
@@ -15,7 +15,7 @@ export interface DocumentSearchState {
   searchOperator: 'AND' | 'OR';
 
   // Search results
-  searchResults: SearchableDocument[];
+  searchResults: Document[];
   searchLoading: boolean;
   searchError: string | null;
 
@@ -66,7 +66,7 @@ export const loadDocumentKeywords = createAsyncThunk<string[], void, { extra: Th
 );
 
 export const searchDocuments = createAsyncThunk<
-  SearchableDocument[],
+  Document[],
   { keywords: string[]; operator: 'AND' | 'OR' },
   { extra: ThunkExtra }
 >('documentSearch/search', async (params, { extra }) => {
@@ -221,11 +221,11 @@ export const selectCurrentSearch = createSelector(
   }),
 );
 
-export const selectSearchResults = (state: RootState): SearchableDocument[] =>
+export const selectSearchResults = (state: RootState): Document[] =>
   state.documentSearch.searchResults;
 
 export interface PaginationResult {
-  results: SearchableDocument[];
+  results: Document[];
   totalResults: number;
   currentPage: number;
   resultsPerPage: number;
@@ -234,21 +234,24 @@ export interface PaginationResult {
   hasPreviousPage: boolean;
 }
 
-export const selectPaginatedResults = (state: RootState): PaginationResult => {
-  const { searchResults, currentPage, resultsPerPage } = state.documentSearch;
-  const startIndex = (currentPage - 1) * resultsPerPage;
-  const endIndex = startIndex + resultsPerPage;
+export const selectPaginatedResults = createSelector(
+  [(state: RootState) => state.documentSearch],
+  (documentSearch): PaginationResult => {
+    const { searchResults, currentPage, resultsPerPage } = documentSearch;
+    const startIndex = (currentPage - 1) * resultsPerPage;
+    const endIndex = startIndex + resultsPerPage;
 
-  return {
-    results: searchResults.slice(startIndex, endIndex),
-    totalResults: searchResults.length,
-    currentPage,
-    resultsPerPage,
-    totalPages: Math.ceil(searchResults.length / resultsPerPage),
-    hasNextPage: endIndex < searchResults.length,
-    hasPreviousPage: currentPage > 1,
-  };
-};
+    return {
+      results: searchResults.slice(startIndex, endIndex),
+      totalResults: searchResults.length,
+      currentPage,
+      resultsPerPage,
+      totalPages: Math.ceil(searchResults.length / resultsPerPage),
+      hasNextPage: endIndex < searchResults.length,
+      hasPreviousPage: currentPage > 1,
+    };
+  }
+);
 
 export interface SearchStatus {
   loading: boolean;
@@ -257,17 +260,20 @@ export interface SearchStatus {
   isEmpty: boolean;
 }
 
-export const selectSearchState = (state: RootState): SearchStatus => ({
-  loading: state.documentSearch.searchLoading,
-  error: state.documentSearch.searchError,
-  hasResults: state.documentSearch.searchResults.length > 0,
-  isEmpty: state.documentSearch.currentKeywords.length === 0,
-});
+export const selectSearchState = createSelector(
+  [(state: RootState) => state.documentSearch],
+  (documentSearch): SearchStatus => ({
+    loading: documentSearch.searchLoading,
+    error: documentSearch.searchError,
+    hasResults: documentSearch.searchResults.length > 0,
+    isEmpty: documentSearch.currentKeywords.length === 0,
+  }),
+);
 
-export const selectSelectedDocument = (state: RootState): SearchableDocument | null => {
+export const selectSelectedDocument = (state: RootState): Document | null => {
   const { selectedDocumentId, searchResults } = state.documentSearch;
   return selectedDocumentId
-    ? searchResults.find((doc: SearchableDocument) => doc.searchId === selectedDocumentId) || null
+    ? searchResults.find((doc: Document) => doc.searchId === selectedDocumentId) || null
     : null;
 };
 

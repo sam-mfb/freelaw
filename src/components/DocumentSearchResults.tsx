@@ -30,7 +30,7 @@ export const DocumentSearchResults: React.FC = () => {
   };
 
   const highlightKeywords = (text: string): string => {
-    if (keywords.length === 0) return text;
+    if (!text || keywords.length === 0) return text || '';
 
     const keywordPattern = new RegExp(`(${keywords.join('|')})`, 'gi');
     return text.replace(keywordPattern, '<mark>$1</mark>');
@@ -100,8 +100,10 @@ export const DocumentSearchResults: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const path = getPdfPath(document.filePath);
-                    window.open(path, '_blank');
+                    if (document.filePath) {
+                      const path = getPdfPath(document.filePath);
+                      window.open(path, '_blank');
+                    }
                   }}
                   className="btn btn-primary btn-sm"
                 >

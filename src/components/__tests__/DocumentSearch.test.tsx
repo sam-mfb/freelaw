@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -48,7 +51,7 @@ const createMockStore = (initialState = {}) => {
 };
 
 describe('DocumentSearch', () => {
-  it('should render toggle button when search is inactive', () => {
+  it('should render search interface', () => {
     const store = createMockStore({ isSearchActive: false });
 
     render(
@@ -57,7 +60,8 @@ describe('DocumentSearch', () => {
       </Provider>,
     );
 
-    expect(screen.getByText('Search Documents')).toBeInTheDocument();
+    expect(screen.getByText('Document Search')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Add keyword/)).toBeInTheDocument();
   });
 
   it('should render search interface when active', () => {
@@ -73,8 +77,26 @@ describe('DocumentSearch', () => {
     expect(screen.getByPlaceholderText(/Add keyword/)).toBeInTheDocument();
   });
 
-  it('should toggle search state when button clicked', () => {
-    const store = createMockStore({ isSearchActive: false });
+  it('should clear search when clear button clicked', () => {
+    const store = createMockStore({ 
+      currentKeywords: ['motion', 'order'],
+      searchResults: [{
+        id: 1,
+        searchId: '1-1-0',
+        entryNumber: 1,
+        documentNumber: '1',
+        attachmentNumber: null,
+        description: 'Test Document',
+        dateFiled: '2023-01-01',
+        pageCount: 10,
+        fileSize: 1000,
+        filePath: '/path/to/doc.pdf',
+        sha1: 'abc123',
+        caseId: 100877,
+        caseName: 'Test Case',
+        court: 'test-court',
+      }] 
+    });
 
     render(
       <Provider store={store}>
@@ -82,12 +104,13 @@ describe('DocumentSearch', () => {
       </Provider>,
     );
 
-    const toggleButton = screen.getByText('Search Documents');
-    fireEvent.click(toggleButton);
+    const clearButton = screen.getByText('Clear');
+    fireEvent.click(clearButton);
 
-    // Check if search became active
+    // Check if search was cleared
     const state = store.getState();
-    expect(state.documentSearch.isSearchActive).toBe(true);
+    expect(state.documentSearch.currentKeywords).toEqual([]);
+    expect(state.documentSearch.searchResults).toEqual([]);
   });
 
   it('should display error messages', () => {

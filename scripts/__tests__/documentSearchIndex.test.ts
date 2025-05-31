@@ -9,7 +9,7 @@ describe('Document Search Index Output', () => {
   beforeAll(() => {
     // Ensure the index is built with sample data
     try {
-      execSync('npm run build:index:full:sample', { stdio: 'inherit' });
+      execSync('npm run build:index:sample', { stdio: 'inherit' });
     } catch (error) {
       console.error('Failed to build sample index:', error);
     }

@@ -1,12 +1,26 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createDocumentSearchService } from '../documentSearchService';
 import type { DocumentSearchService } from '../documentSearchService';
+
+// Mock fetch for integration tests in Node environment
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
+// Mock dataService as well
+vi.mock('../dataService', () => ({
+  dataService: {
+    loadCaseDocuments: vi.fn(),
+  },
+}));
+
+import { dataService } from '../dataService';
 
 describe('DocumentSearchService Integration', () => {
   let service: DocumentSearchService;
 
   beforeEach(() => {
     service = createDocumentSearchService();
+    vi.clearAllMocks();
   });
 
   it('should perform complete search workflow', async () => {
@@ -105,6 +119,63 @@ describe('DocumentSearchService Integration', () => {
       '234561-15-2', // Multi-digit document number with attachment
       '789012-1-null', // Main document without attachment
     ];
+    
+    // Mock dataService.loadCaseDocuments
+    vi.mocked(dataService.loadCaseDocuments)
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          entryNumber: 1,
+          documentNumber: '1',
+          attachmentNumber: 0,
+          description: 'Test Doc 1',
+          dateFiled: '2023-01-01',
+          pageCount: 10,
+          fileSize: 1000,
+          filePath: '/path/to/doc1.pdf',
+          sha1: 'abc123',
+          caseId: 100877,
+          caseName: 'Test Case 1',
+          court: 'test-court',
+          searchId: '100877-1-0',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 15,
+          entryNumber: 15,
+          documentNumber: '15',
+          attachmentNumber: 2,
+          description: 'Test Doc 15',
+          dateFiled: '2023-01-02',
+          pageCount: 20,
+          fileSize: 2000,
+          filePath: '/path/to/doc15.pdf',
+          sha1: 'def456',
+          caseId: 234561,
+          caseName: 'Test Case 2',
+          court: 'test-court',
+          searchId: '234561-15-2',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          entryNumber: 1,
+          documentNumber: '1',
+          attachmentNumber: null,
+          description: 'Test Doc Main',
+          dateFiled: '2023-01-03',
+          pageCount: 30,
+          fileSize: 3000,
+          filePath: '/path/to/docmain.pdf',
+          sha1: 'ghi789',
+          caseId: 789012,
+          caseName: 'Test Case 3',
+          court: 'test-court',
+          searchId: '789012-1-null',
+        },
+      ]);
 
     const documents = await service.resolveDocuments(testIds);
 

@@ -19,10 +19,29 @@ import documentSearchReducer, {
   selectKeywordSuggestions,
   selectSearchStats,
 } from '../documentSearchSlice';
-import type { SearchableDocument } from '../../types/document.types';
+import type { Document } from '../../types/document.types';
 import type { ThunkDispatch } from '@reduxjs/toolkit';
 import type { AnyAction } from 'redux';
 import type { ThunkExtra } from '../types';
+
+// Helper to create valid mock documents
+const createMockDocument = (overrides: Partial<Document> = {}): Document => ({
+  id: 1,
+  entryNumber: 1,
+  documentNumber: '1',
+  attachmentNumber: null,
+  description: 'Test Document',
+  dateFiled: '2023-01-01',
+  pageCount: 10,
+  fileSize: 1000,
+  filePath: '/path/to/doc.pdf',
+  sha1: 'abc123',
+  caseId: 100877,
+  caseName: 'Test Case',
+  court: 'test-court',
+  searchId: '100877-1-null',
+  ...overrides,
+});
 
 // Mock services
 const mockDocumentSearchService = {
@@ -215,16 +234,17 @@ describe('documentSearchSlice', () => {
 
     it('handles document search', async () => {
       const store = createTestStore();
-      const mockDocuments: SearchableDocument[] = [
-        {
-          id: '100877-1-0',
+      const mockDocuments: Document[] = [
+        createMockDocument({
+          id: 1,
+          searchId: '100877-1-0',
           caseId: 100877,
           documentNumber: '1',
           attachmentNumber: 0,
           description: 'Motion for Summary Judgment',
           caseName: 'Test Case',
           court: 'cacd',
-        },
+        }),
       ];
 
       mockDocumentSearchService.searchByMultipleKeywords.mockResolvedValueOnce(['100877-1-0']);
@@ -297,24 +317,54 @@ describe('documentSearchSlice', () => {
 
   describe('selectors', () => {
     const mockState = {
-      cases: {} as Parameters<typeof selectPaginatedResults>[0]['cases'],
-      documents: {} as Parameters<typeof selectPaginatedResults>[0]['documents'],
-      ui: {} as Parameters<typeof selectPaginatedResults>[0]['ui'],
+      cases: {
+        index: null,
+        filteredCases: [],
+        selectedCaseId: null,
+        searchTerm: '',
+        filters: {
+          court: null,
+          dateFrom: null,
+          dateTo: null,
+          onlyActive: false,
+        },
+        loading: false,
+        error: null,
+      },
+      documents: {
+        documents: {},
+        currentDocuments: [],
+        filteredDocuments: [],
+        searchTerm: '',
+        loading: false,
+        error: null,
+      },
+      ui: {
+        sidebarOpen: true,
+        documentListView: 'list' as const,
+        sortBy: 'name' as const,
+        sortOrder: 'asc' as const,
+        casesPerPage: 25,
+        currentPage: 1,
+      },
       documentSearch: {
         availableKeywords: ['motion', 'deposition', 'order', 'summary'],
         keywordsLoading: false,
         keywordsError: null,
         currentKeywords: ['motion', 'summary'],
         searchOperator: 'AND' as const,
-        searchResults: Array.from({ length: 25 }, (_, i) => ({
-          id: `${i + 1}-1-0`,
-          caseId: i + 1,
-          documentNumber: '1',
-          attachmentNumber: 0,
-          description: `Document ${i + 1}`,
-          caseName: `Case ${i + 1}`,
-          court: 'cacd',
-        })),
+        searchResults: Array.from({ length: 25 }, (_, i) => 
+          createMockDocument({
+            id: i + 1,
+            searchId: `${i + 1}-1-0`,
+            caseId: i + 1,
+            documentNumber: '1',
+            attachmentNumber: 0,
+            description: `Document ${i + 1}`,
+            caseName: `Case ${i + 1}`,
+            court: 'cacd',
+          })
+        ),
         searchLoading: false,
         searchError: null,
         isSearchActive: true,
@@ -328,12 +378,10 @@ describe('documentSearchSlice', () => {
     };
 
     it('selects paginated results correctly', () => {
-      const result = selectPaginatedResults(
-        mockState as Parameters<typeof selectPaginatedResults>[0],
-      );
+      const result = selectPaginatedResults(mockState);
 
       expect(result.results).toHaveLength(10);
-      expect(result.results[0].id).toBe('11-1-0'); // First item on page 2
+      expect(result.results[0].searchId).toBe('11-1-0'); // First item on page 2
       expect(result.totalResults).toBe(25);
       expect(result.currentPage).toBe(2);
       expect(result.totalPages).toBe(3);
@@ -350,9 +398,7 @@ describe('documentSearchSlice', () => {
         },
       };
 
-      const result = selectPaginatedResults(
-        lastPageState as Parameters<typeof selectPaginatedResults>[0],
-      );
+      const result = selectPaginatedResults(lastPageState);
 
       expect(result.results).toHaveLength(5); // 25 total, 20 on first two pages
       expect(result.hasNextPage).toBe(false);
@@ -360,7 +406,7 @@ describe('documentSearchSlice', () => {
     });
 
     it('selects search state', () => {
-      const result = selectSearchState(mockState as Parameters<typeof selectSearchState>[0]);
+      const result = selectSearchState(mockState);
 
       expect(result.loading).toBe(false);
       expect(result.error).toBe(null);
@@ -377,20 +423,18 @@ describe('documentSearchSlice', () => {
         },
       };
 
-      const result = selectSearchState(emptyState as Parameters<typeof selectSearchState>[0]);
+      const result = selectSearchState(emptyState);
       expect(result.isEmpty).toBe(true);
     });
 
     it('selects keyword suggestions', () => {
-      const result = selectKeywordSuggestions(
-        mockState as Parameters<typeof selectKeywordSuggestions>[0],
-      );
+      const result = selectKeywordSuggestions(mockState);
 
       expect(result).toEqual(['deposition', 'order']);
     });
 
     it('selects search stats', () => {
-      const result = selectSearchStats(mockState as Parameters<typeof selectSearchStats>[0]);
+      const result = selectSearchStats(mockState);
 
       expect(result.keywordsLoaded).toBe(4);
       expect(result.activeKeywords).toBe(2);

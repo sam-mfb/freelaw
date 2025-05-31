@@ -33,12 +33,17 @@ describe('extractDocuments', () => {
       id: 101,
       entryNumber: 1,
       documentNumber: '1',
+      attachmentNumber: null,
       description: 'Motion to Dismiss',
       dateFiled: '2023-01-15',
       pageCount: 10,
       fileSize: 102400,
       filePath: '/path/to/doc1.pdf',
       sha1: 'abc123',
+      caseId: 12345,
+      caseName: 'Case 12345',
+      court: 'unknown',
+      searchId: '12345-1-null',
     });
   });
 
@@ -107,12 +112,17 @@ describe('extractDocuments', () => {
       id: 101,
       entryNumber: 1,
       documentNumber: '1',
+      attachmentNumber: null,
       description: '',
       dateFiled: '',
       pageCount: null,
       fileSize: null,
       filePath: '/path/to/doc1.pdf',
       sha1: '',
+      caseId: 12345,
+      caseName: 'Case 12345',
+      court: 'unknown',
+      searchId: '12345-1-null',
     });
   });
 

@@ -1,10 +1,39 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createDocumentSearchService } from '../documentSearchService';
 import type { DocumentSearchService } from '../documentSearchService';
+import type { Document } from '../../types/document.types';
 
 // Mock fetch globally
 const mockFetch = vi.fn<Parameters<typeof fetch>, ReturnType<typeof fetch>>();
 global.fetch = mockFetch;
+
+// Mock dataService
+vi.mock('../dataService', () => ({
+  dataService: {
+    loadCaseDocuments: vi.fn(),
+  },
+}));
+
+import { dataService } from '../dataService';
+
+// Helper to create valid document mocks
+const createMockDocument = (overrides: Partial<Document> = {}): Document => ({
+  id: 1,
+  entryNumber: 1,
+  documentNumber: '1',
+  attachmentNumber: null,
+  description: 'Test Document',
+  dateFiled: '2023-01-01',
+  pageCount: 10,
+  fileSize: 1000,
+  filePath: '/path/to/doc.pdf',
+  sha1: 'abcd1234',
+  caseId: 100877,
+  caseName: 'Test Case',
+  court: 'test-court',
+  searchId: '100877-1-0',
+  ...overrides,
+});
 
 describe('DocumentSearchService', () => {
   let service: DocumentSearchService;
@@ -12,6 +41,8 @@ describe('DocumentSearchService', () => {
   beforeEach(() => {
     service = createDocumentSearchService();
     vi.clearAllMocks();
+    // Reset dataService mock
+    vi.mocked(dataService.loadCaseDocuments).mockClear();
   });
 
   it('should load keywords from server', async () => {
@@ -187,11 +218,34 @@ describe('DocumentSearchService', () => {
 
   it('should resolve document IDs to full documents', async () => {
     const documentIds = ['100877-1-0', '234561-5-null'];
+    
+    // Mock dataService.loadCaseDocuments
+    vi.mocked(dataService.loadCaseDocuments)
+      .mockResolvedValueOnce([
+        createMockDocument({ 
+          id: 1, 
+          documentNumber: '1', 
+          attachmentNumber: 0,
+          searchId: '100877-1-0',
+          caseId: 100877 
+        }),
+      ])
+      .mockResolvedValueOnce([
+        createMockDocument({ 
+          id: 5, 
+          documentNumber: '5', 
+          attachmentNumber: null,
+          searchId: '234561-5-null',
+          caseId: 234561 
+        }),
+      ]);
+    
     const documents = await service.resolveDocuments(documentIds);
 
     expect(documents).toHaveLength(2);
     expect(documents[0]).toMatchObject({
-      id: '100877-1-0',
+      id: 1,
+      searchId: '100877-1-0',
       caseId: 100877,
       documentNumber: '1',
       attachmentNumber: 0,
@@ -200,7 +254,8 @@ describe('DocumentSearchService', () => {
       court: expect.any(String),
     });
     expect(documents[1]).toMatchObject({
-      id: '234561-5-null',
+      id: 5,
+      searchId: '234561-5-null',
       caseId: 234561,
       documentNumber: '5',
       attachmentNumber: null,
@@ -212,6 +267,17 @@ describe('DocumentSearchService', () => {
 
   it('should cache resolved documents', async () => {
     const documentIds = ['100877-1-0'];
+    
+    // Mock dataService.loadCaseDocuments
+    vi.mocked(dataService.loadCaseDocuments).mockResolvedValueOnce([
+      createMockDocument({ 
+        id: 1, 
+        documentNumber: '1', 
+        attachmentNumber: 0,
+        searchId: '100877-1-0',
+        caseId: 100877 
+      }),
+    ]);
 
     // First call
     const docs1 = await service.resolveDocuments(documentIds);
@@ -222,6 +288,8 @@ describe('DocumentSearchService', () => {
     expect(docs1).toEqual(docs2);
     // Both should return the same object reference from cache
     expect(docs1[0]).toBe(docs2[0]);
+    // DataService should only be called once due to caching
+    expect(vi.mocked(dataService.loadCaseDocuments)).toHaveBeenCalledTimes(1);
   });
 
   it('should clear all caches', async () => {
@@ -238,6 +306,17 @@ describe('DocumentSearchService', () => {
         ok: true,
         json: () => Promise.resolve(mockResult),
       } as Response);
+
+    // Mock dataService for resolveDocuments
+    vi.mocked(dataService.loadCaseDocuments).mockResolvedValueOnce([
+      createMockDocument({ 
+        id: 1, 
+        documentNumber: '1', 
+        attachmentNumber: 0,
+        searchId: '100877-1-0',
+        caseId: 100877 
+      }),
+    ]);
 
     await service.loadKeywords();
     await service.searchByKeyword('motion');

@@ -5,7 +5,6 @@ import type {
   Document,
   DocumentSearchKeywords,
   DocumentSearchResult,
-  SearchableDocument,
 } from './document.types';
 
 export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
@@ -226,7 +225,7 @@ export function isDocumentSearchResult(data: unknown): data is DocumentSearchRes
   );
 }
 
-export function isSearchableDocument(data: unknown): data is SearchableDocument {
+export function isSearchableDocument(data: unknown): data is Document {
   if (!data || typeof data !== 'object') {
     return false;
   }
