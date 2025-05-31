@@ -1,35 +1,35 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { 
-  setSearchTerm, 
-  setCourtFilter, 
+import {
+  setSearchTerm,
+  setCourtFilter,
   setDateFilter,
   setOnlyActive,
-  clearFilters 
+  clearFilters,
 } from '../store/casesSlice';
 
 export const CaseSearch: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { searchTerm, filters, index } = useAppSelector(state => state.cases);
+  const { searchTerm, filters, index } = useAppSelector((state) => state.cases);
   const [dateFrom, setDateFrom] = useState(filters.dateFrom || '');
   const [dateTo, setDateTo] = useState(filters.dateTo || '');
-  
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(setSearchTerm(e.target.value));
   };
-  
+
   const handleCourtChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(setCourtFilter(e.target.value || null));
   };
-  
+
   const handleDateChange = () => {
     dispatch(setDateFilter({ from: dateFrom, to: dateTo }));
   };
-  
+
   return (
     <div className="case-search">
       <h2>Search Cases</h2>
-      
+
       <input
         type="text"
         value={searchTerm}
@@ -37,20 +37,16 @@ export const CaseSearch: React.FC = () => {
         placeholder="Search by case name..."
         className="search-input"
       />
-      
-      <select 
-        value={filters.court || ''} 
-        onChange={handleCourtChange}
-        className="court-filter"
-      >
+
+      <select value={filters.court || ''} onChange={handleCourtChange} className="court-filter">
         <option value="">All Courts</option>
-        {index?.courts.map(court => (
+        {index?.courts.map((court) => (
           <option key={court.code} value={court.code}>
             {court.name}
           </option>
         ))}
       </select>
-      
+
       <div className="date-filters">
         <input
           type="date"
@@ -67,7 +63,7 @@ export const CaseSearch: React.FC = () => {
           placeholder="To date"
         />
       </div>
-      
+
       <label className="checkbox">
         <input
           type="checkbox"
@@ -76,10 +72,8 @@ export const CaseSearch: React.FC = () => {
         />
         Active cases only
       </label>
-      
-      <button onClick={() => dispatch(clearFilters())}>
-        Clear Filters
-      </button>
+
+      <button onClick={() => dispatch(clearFilters())}>Clear Filters</button>
     </div>
   );
 };

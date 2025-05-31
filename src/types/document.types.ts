@@ -10,6 +10,16 @@ export interface Document {
   sha1: string;
 }
 
+export interface SearchableDocument {
+  id: string;
+  caseId: number;
+  documentNumber: string;
+  attachmentNumber: number;
+  description: string;
+  caseName: string;
+  court: string;
+}
+
 export interface DocketEntry {
   recap_documents: RecapDocument[];
   entry_number: number;

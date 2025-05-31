@@ -183,6 +183,8 @@ export async function safeJsonParse(response: Response): Promise<unknown> {
   try {
     return (await response.json()) as unknown;
   } catch (error) {
-    throw new Error(`Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 }

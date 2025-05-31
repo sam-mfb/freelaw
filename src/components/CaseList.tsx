@@ -5,23 +5,23 @@ import { loadDocuments } from '../store/documentsSlice';
 
 export const CaseList: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { filteredCases, selectedCaseId, loading } = useAppSelector(state => state.cases);
-  
+  const { filteredCases, selectedCaseId, loading } = useAppSelector((state) => state.cases);
+
   const handleCaseClick = (caseId: number) => {
     dispatch(selectCase(caseId));
     dispatch(loadDocuments(caseId));
   };
-  
+
   if (loading) {
     return <div className="loading">Loading cases...</div>;
   }
-  
+
   return (
     <div className="case-list">
       <h3>Cases ({filteredCases.length})</h3>
-      
+
       <div className="case-items">
-        {filteredCases.map(caseItem => (
+        {filteredCases.map((caseItem) => (
           <div
             key={caseItem.id}
             className={`case-card ${caseItem.id === selectedCaseId ? 'selected' : ''}`}

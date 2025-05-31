@@ -71,8 +71,15 @@ describe('Redux Store', () => {
         loadCaseIndex: vi.fn(() => Promise.resolve(mockCaseIndex)),
         loadCaseDocuments: vi.fn(() => Promise.resolve(mockDocuments)),
       },
+      documentSearchService: {
+        loadKeywords: vi.fn(() => Promise.resolve([])),
+        searchByKeyword: vi.fn(() => Promise.resolve([])),
+        searchByMultipleKeywords: vi.fn(() => Promise.resolve([])),
+        resolveDocuments: vi.fn(() => Promise.resolve([])),
+        clearCache: vi.fn(),
+      },
     };
-    
+
     store = createAppStore(mockServices);
   });
 
@@ -151,4 +158,3 @@ describe('Redux Store', () => {
     });
   });
 });
-

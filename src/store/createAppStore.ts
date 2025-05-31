@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import casesReducer from './casesSlice';
 import documentsReducer from './documentsSlice';
 import uiReducer from './uiSlice';
+import documentSearchReducer from './documentSearchSlice';
 import type { AppServices } from '../services/types';
 
 export const createAppStore = (services: AppServices) =>
@@ -10,6 +11,7 @@ export const createAppStore = (services: AppServices) =>
       cases: casesReducer,
       documents: documentsReducer,
       ui: uiReducer,
+      documentSearch: documentSearchReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
