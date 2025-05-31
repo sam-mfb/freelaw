@@ -1,7 +1,12 @@
 import type { RawCaseData, RawDocketEntry, RawRecapDocument, CaseIndex } from './index.types';
 import type { CaseSummary } from './case.types';
 import type { Court } from './court.types';
-import type { Document, DocumentSearchKeywords, DocumentSearchResult, SearchableDocument } from './document.types';
+import type {
+  Document,
+  DocumentSearchKeywords,
+  DocumentSearchResult,
+  SearchableDocument,
+} from './document.types';
 
 export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
   if (!obj || typeof obj !== 'object') {
@@ -184,56 +189,55 @@ export async function safeJsonParse(response: Response): Promise<unknown> {
   try {
     return (await response.json()) as unknown;
   } catch (error) {
-    throw new Error(`Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 }
 
-export function isDocumentSearchKeywords(obj: unknown): obj is DocumentSearchKeywords {
-  if (!obj || typeof obj !== 'object') {
+export function isDocumentSearchKeywords(data: unknown): data is DocumentSearchKeywords {
+  if (!data || typeof data !== 'object') {
     return false;
   }
 
-  const data = obj as Record<string, unknown>;
+  const obj = data as Record<string, unknown>;
+
+  return Array.isArray(obj.keywords) && obj.keywords.every((k: unknown) => typeof k === 'string');
+}
+
+export function isDocumentSearchResult(data: unknown): data is DocumentSearchResult {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const obj = data as Record<string, unknown>;
 
   return (
-    Array.isArray(data.keywords) &&
-    data.keywords.every((keyword) => typeof keyword === 'string')
+    typeof obj.keyword === 'string' &&
+    Array.isArray(obj.documentIds) &&
+    obj.documentIds.every((id: unknown) => typeof id === 'string')
   );
 }
 
-export function isDocumentSearchResult(obj: unknown): obj is DocumentSearchResult {
-  if (!obj || typeof obj !== 'object') {
+export function isSearchableDocument(data: unknown): data is SearchableDocument {
+  if (!data || typeof data !== 'object') {
     return false;
   }
 
-  const data = obj as Record<string, unknown>;
+  const obj = data as Record<string, unknown>;
 
   return (
-    typeof data.keyword === 'string' &&
-    Array.isArray(data.documentIds) &&
-    data.documentIds.every((id) => typeof id === 'string')
-  );
-}
-
-export function isSearchableDocument(obj: unknown): obj is SearchableDocument {
-  if (!obj || typeof obj !== 'object') {
-    return false;
-  }
-
-  const doc = obj as Record<string, unknown>;
-
-  return (
-    typeof doc.id === 'string' &&
-    typeof doc.caseId === 'number' &&
-    typeof doc.documentNumber === 'string' &&
-    (doc.attachmentNumber === null || typeof doc.attachmentNumber === 'number') &&
-    typeof doc.description === 'string' &&
-    typeof doc.caseName === 'string' &&
-    typeof doc.court === 'string' &&
-    (doc.dateCreated === undefined || typeof doc.dateCreated === 'string') &&
-    (doc.filePath === undefined || typeof doc.filePath === 'string') &&
-    (doc.pageCount === undefined || typeof doc.pageCount === 'number') &&
-    (doc.fileSize === undefined || typeof doc.fileSize === 'number')
+    typeof obj.id === 'string' &&
+    typeof obj.caseId === 'number' &&
+    typeof obj.documentNumber === 'string' &&
+    (obj.attachmentNumber === null || typeof obj.attachmentNumber === 'number') &&
+    typeof obj.description === 'string' &&
+    typeof obj.caseName === 'string' &&
+    typeof obj.court === 'string' &&
+    (obj.dateCreated === undefined || typeof obj.dateCreated === 'string') &&
+    (obj.filePath === undefined || typeof obj.filePath === 'string') &&
+    (obj.pageCount === undefined || typeof obj.pageCount === 'number') &&
+    (obj.fileSize === undefined || typeof obj.fileSize === 'number')
   );
 }
 
@@ -246,10 +250,18 @@ export function parseDocumentId(id: string): {
   if (parts.length !== 3) {
     throw new Error(`Invalid document ID format: ${id}`);
   }
-  
-  return {
-    caseId: parseInt(parts[0], 10),
-    documentNumber: parts[1],
-    attachmentNumber: parts[2] === 'null' ? null : parseInt(parts[2], 10)
-  };
+
+  const caseId = parseInt(parts[0], 10);
+  const documentNumber = parts[1];
+  const attachmentNumber = parts[2] === 'null' ? null : parseInt(parts[2], 10);
+
+  if (isNaN(caseId)) {
+    throw new Error(`Invalid case ID in document ID: ${id}`);
+  }
+
+  if (attachmentNumber !== null && isNaN(attachmentNumber)) {
+    throw new Error(`Invalid attachment number in document ID: ${id}`);
+  }
+
+  return { caseId, documentNumber, attachmentNumber };
 }

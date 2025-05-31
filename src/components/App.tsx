@@ -5,10 +5,10 @@ import { Layout } from './Layout';
 
 export function App() {
   const dispatch = useAppDispatch();
-  
+
   useEffect(() => {
     dispatch(loadCaseIndex());
   }, [dispatch]);
-  
+
   return <Layout />;
 }

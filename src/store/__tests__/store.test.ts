@@ -72,7 +72,7 @@ describe('Redux Store', () => {
         loadCaseDocuments: vi.fn(() => Promise.resolve(mockDocuments)),
       },
     };
-    
+
     store = createAppStore(mockServices);
   });
 
@@ -151,4 +151,3 @@ describe('Redux Store', () => {
     });
   });
 });
-

@@ -347,7 +347,7 @@ describe('DataService - Factory Function', () => {
 
   test('caching reduces fetch calls', async () => {
     const service = createDataService();
-    
+
     const mockIndex = {
       cases: [],
       courts: [],
@@ -426,7 +426,9 @@ describe('DataService - Error Handling', () => {
       },
     });
 
-    await expect(dataService.loadCaseIndex()).rejects.toThrow('Failed to parse JSON response: Unexpected token in JSON');
+    await expect(dataService.loadCaseIndex()).rejects.toThrow(
+      'Failed to parse JSON response: Unexpected token in JSON',
+    );
   });
 
   test('loadCaseDocuments - handles malformed JSON', async () => {
@@ -437,7 +439,9 @@ describe('DataService - Error Handling', () => {
       },
     });
 
-    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Failed to parse JSON response: Invalid JSON');
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow(
+      'Failed to parse JSON response: Invalid JSON',
+    );
   });
 
   test('loadFullCase - handles malformed JSON', async () => {
@@ -448,7 +452,9 @@ describe('DataService - Error Handling', () => {
       },
     });
 
-    await expect(dataService.loadFullCase(123)).rejects.toThrow('Failed to parse JSON response: Malformed response');
+    await expect(dataService.loadFullCase(123)).rejects.toThrow(
+      'Failed to parse JSON response: Malformed response',
+    );
   });
 
   test('loadCaseIndex - handles network errors with status text', async () => {
@@ -457,7 +463,9 @@ describe('DataService - Error Handling', () => {
       statusText: 'Not Found',
     });
 
-    await expect(dataService.loadCaseIndex()).rejects.toThrow('Failed to load case index: Not Found');
+    await expect(dataService.loadCaseIndex()).rejects.toThrow(
+      'Failed to load case index: Not Found',
+    );
   });
 
   test('loadCaseDocuments - handles network errors with status text', async () => {
@@ -466,7 +474,9 @@ describe('DataService - Error Handling', () => {
       statusText: 'Internal Server Error',
     });
 
-    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow('Failed to load documents for case 123: Internal Server Error');
+    await expect(dataService.loadCaseDocuments(123)).rejects.toThrow(
+      'Failed to load documents for case 123: Internal Server Error',
+    );
   });
 
   test('loadFullCase - handles network errors with status text', async () => {
@@ -475,7 +485,9 @@ describe('DataService - Error Handling', () => {
       statusText: 'Service Unavailable',
     });
 
-    await expect(dataService.loadFullCase(123)).rejects.toThrow('Failed to load case 123: Service Unavailable');
+    await expect(dataService.loadFullCase(123)).rejects.toThrow(
+      'Failed to load case 123: Service Unavailable',
+    );
   });
 
   test('loadCaseIndex - handles fetch rejections', async () => {

@@ -43,7 +43,7 @@ export interface DocumentSearchIndex {
 }
 
 export interface SearchableDocument {
-  id: string;
+  id: string; // "caseId-docNum-attachNum"
   caseId: number;
   documentNumber: string;
   attachmentNumber: number | null;
@@ -54,4 +54,10 @@ export interface SearchableDocument {
   filePath?: string;
   pageCount?: number;
   fileSize?: number;
+}
+
+export interface DocumentSearchCache {
+  keywords: string[] | null;
+  keywordFiles: Map<string, string[]>;
+  resolvedDocuments: Map<string, SearchableDocument>;
 }
