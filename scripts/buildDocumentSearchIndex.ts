@@ -1,33 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { BuildConfig, RawCaseData } from '../src/types/index.types';
-import { isRawCaseData } from '../src/types/guards';
 import { extractKeywords, createDocumentId } from './extractKeywords';
-
-async function ensureDirectoryExists(dirPath: string): Promise<void> {
-  try {
-    await fs.mkdir(dirPath, { recursive: true });
-  } catch (error) {
-    console.error(`Error creating directory ${dirPath}:`, error);
-  }
-}
-
-async function readJsonFile(filePath: string): Promise<RawCaseData | null> {
-  try {
-    const content = await fs.readFile(filePath, 'utf-8');
-    const data = JSON.parse(content);
-
-    if (!isRawCaseData(data)) {
-      console.error(`Invalid case data structure in file ${filePath}`);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error(`Error reading file ${filePath}:`, error);
-    return null;
-  }
-}
+import { ensureDirectoryExists, readJsonFile } from './utils';
 
 function processDocumentsForKeywords(
   caseData: RawCaseData,

@@ -97,101 +97,6 @@ const STOP_WORDS = new Set([
   'over',
 ]);
 
-const LEGAL_KEYWORDS = new Set([
-  'motion',
-  'order',
-  'deposition',
-  'brief',
-  'complaint',
-  'answer',
-  'response',
-  'reply',
-  'summary',
-  'judgment',
-  'injunction',
-  'discovery',
-  'settlement',
-  'hearing',
-  'trial',
-  'appeal',
-  'filing',
-  'conference',
-  'notice',
-  'objection',
-  'memorandum',
-  'affidavit',
-  'declaration',
-  'exhibit',
-  'stipulation',
-  'subpoena',
-  'transcript',
-  'opinion',
-  'ruling',
-  'verdict',
-  'sentence',
-  'plea',
-  'dismissal',
-  'continuance',
-  'opposition',
-  'joinder',
-  'consent',
-  'waiver',
-  'certificate',
-  'appearance',
-  'summons',
-  'warrant',
-  'petition',
-  'application',
-  'claim',
-  'counterclaim',
-  'crossclaim',
-  'interpleader',
-  'intervention',
-  'consolidation',
-  'remand',
-  'removal',
-  'transfer',
-  'recusal',
-  'disqualification',
-  'sanction',
-  'contempt',
-  'default',
-  'amendment',
-  'supplement',
-  'correction',
-  'clarification',
-  'reconsideration',
-  'rehearing',
-  'review',
-  'mandamus',
-  'certiorari',
-  'habeas',
-  'corpus',
-  'amicus',
-  'curiae',
-  'protective',
-  'restraining',
-  'preliminary',
-  'permanent',
-  'temporary',
-  'emergency',
-  'expedited',
-  'joint',
-  'unopposed',
-  'sealed',
-  'redacted',
-  'confidential',
-  'privileged',
-  'proposed',
-  'final',
-  'initial',
-  'supplemental',
-  'amended',
-  'corrected',
-  'revised',
-  'modified',
-]);
-
 export function extractKeywords(description: string): string[] {
   const normalized = description
     .toLowerCase()
@@ -205,17 +110,11 @@ export function extractKeywords(description: string): string[] {
     .filter((word) => !STOP_WORDS.has(word))
     .filter((word) => /^[a-z]+$/.test(word));
 
-  const keywords = new Set<string>();
+  const keywords = words
+    .filter((word) => word.length >= 4)
+    .filter((word, index, self) => self.indexOf(word) === index);
 
-  for (const word of words) {
-    if (LEGAL_KEYWORDS.has(word)) {
-      keywords.add(word);
-    } else if (word.length >= 4) {
-      keywords.add(word);
-    }
-  }
-
-  return Array.from(keywords).sort();
+  return keywords.sort();
 }
 
 export function createDocumentId(

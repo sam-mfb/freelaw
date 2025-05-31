@@ -19,7 +19,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:performance": "vite-node scripts/performanceTest.ts"
   },
   "dependencies": {
     "react": "^18.2.0",

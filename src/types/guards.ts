@@ -171,12 +171,17 @@ export function isDocument(obj: unknown): obj is Document {
     typeof doc.id === 'number' &&
     typeof doc.entryNumber === 'number' &&
     typeof doc.documentNumber === 'string' &&
+    (doc.attachmentNumber === null || typeof doc.attachmentNumber === 'number') &&
     typeof doc.description === 'string' &&
     typeof doc.dateFiled === 'string' &&
     (doc.pageCount === null || typeof doc.pageCount === 'number') &&
     (doc.fileSize === null || typeof doc.fileSize === 'number') &&
     (doc.filePath === null || typeof doc.filePath === 'string') &&
-    typeof doc.sha1 === 'string'
+    typeof doc.sha1 === 'string' &&
+    typeof doc.caseId === 'number' &&
+    typeof doc.caseName === 'string' &&
+    typeof doc.court === 'string' &&
+    typeof doc.searchId === 'string'
   );
 }
 

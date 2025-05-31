@@ -5,6 +5,7 @@ import { loadDocuments, setDocumentSearch } from '../documentsSlice';
 import { toggleSidebar, setDocumentView } from '../uiSlice';
 import { createAppStore, type AppStore } from '../createAppStore';
 import type { AppServices } from '../../services/types';
+import type { Document } from '../../types/document.types';
 
 const mockCaseIndex = {
   cases: [
@@ -36,28 +37,38 @@ const mockCaseIndex = {
   dateRange: { min: '2023-01-01', max: '2023-02-01' },
 };
 
-const mockDocuments = [
+const mockDocuments: Document[] = [
   {
     id: 1,
     entryNumber: 1,
     documentNumber: '1',
+    attachmentNumber: null,
     description: 'Initial Complaint',
     dateFiled: '2023-01-01',
     pageCount: 10,
     fileSize: 1024,
     filePath: '/test/1.pdf',
     sha1: 'abc123',
+    caseId: 1,
+    caseName: 'Test Case',
+    court: 'cacd',
+    searchId: '1-1-null',
   },
   {
     id: 2,
     entryNumber: 2,
     documentNumber: '2',
+    attachmentNumber: null,
     description: 'Motion to Dismiss',
     dateFiled: '2023-01-05',
     pageCount: 5,
     fileSize: 512,
     filePath: '/test/2.pdf',
     sha1: 'def456',
+    caseId: 1,
+    caseName: 'Test Case',
+    court: 'cacd',
+    searchId: '1-2-null',
   },
 ];
 
