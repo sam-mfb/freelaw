@@ -125,7 +125,7 @@ export const loadDocumentKeywords = createAsyncThunk(
   'documentSearch/loadKeywords',
   async (_, { extra }) => {
     const { services } = extra as ThunkExtra;
-    return await services.dataService.loadDocumentSearchKeywords();
+    return await services.documentSearchService.loadKeywords();
   }
 );
 
@@ -138,27 +138,14 @@ export const searchDocuments = createAsyncThunk(
       return [];
     }
     
-    // Get document IDs for all keywords
-    const documentIdSets = await Promise.all(
-      params.keywords.map(keyword => services.dataService.searchDocumentsByKeyword(keyword))
+    // Use standalone document search service
+    const documentIds = await services.documentSearchService.searchByMultipleKeywords(
+      params.keywords, 
+      params.operator
     );
     
-    // Combine results based on operator
-    let combinedIds: string[];
-    if (params.operator === 'AND') {
-      // Intersection - documents that appear in ALL keyword results
-      combinedIds = documentIdSets.reduce((intersection, currentSet) => 
-        intersection.filter(id => currentSet.includes(id))
-      );
-    } else {
-      // Union - documents that appear in ANY keyword result
-      const unionSet = new Set<string>();
-      documentIdSets.forEach(idSet => idSet.forEach(id => unionSet.add(id)));
-      combinedIds = Array.from(unionSet);
-    }
-    
     // Resolve document IDs to full document objects
-    const documents = await services.dataService.resolveDocumentIds(combinedIds);
+    const documents = await services.documentSearchService.resolveDocuments(documentIds);
     return documents;
   }
 );
@@ -167,7 +154,7 @@ export const clearDocumentSearchCache = createAsyncThunk(
   'documentSearch/clearCache',
   async (_, { extra }) => {
     const { services } = extra as ThunkExtra;
-    services.dataService.clearDocumentSearchCache();
+    services.documentSearchService.clearCache();
     return null;
   }
 );
@@ -375,10 +362,12 @@ import uiReducer from './uiSlice';
 import documentSearchReducer from './documentSearchSlice';  // New import
 import type { ThunkExtra } from './types';
 import { createDataService } from '../services/dataService';
+import { createDocumentSearchService } from '../services/documentSearchService';
 
 export function createAppStore(services?: Partial<ThunkExtra['services']>) {
   const defaultServices = {
     dataService: createDataService(),
+    documentSearchService: createDocumentSearchService(),
   };
 
   const store = configureStore({
@@ -449,11 +438,12 @@ import documentSearchReducer, {
 } from '../documentSearchSlice';
 
 // Mock services
-const mockDataService = {
-  loadDocumentSearchKeywords: vi.fn(),
-  searchDocumentsByKeyword: vi.fn(),
-  resolveDocumentIds: vi.fn(),
-  clearDocumentSearchCache: vi.fn(),
+const mockDocumentSearchService = {
+  loadKeywords: vi.fn(),
+  searchByKeyword: vi.fn(),
+  searchByMultipleKeywords: vi.fn(),
+  resolveDocuments: vi.fn(),
+  clearCache: vi.fn(),
 };
 
 const createTestStore = () => {
@@ -465,7 +455,7 @@ const createTestStore = () => {
       getDefaultMiddleware({
         thunk: {
           extraArgument: {
-            services: { dataService: mockDataService },
+            services: { documentSearchService: mockDocumentSearchService },
           },
         },
       }),
@@ -527,7 +517,7 @@ describe('documentSearchSlice', () => {
     const store = createTestStore();
     const mockKeywords = ['motion', 'deposition', 'order'];
     
-    mockDataService.loadDocumentSearchKeywords.mockResolvedValueOnce(mockKeywords);
+    mockDocumentSearchService.loadKeywords.mockResolvedValueOnce(mockKeywords);
     
     await store.dispatch(loadDocumentKeywords());
     
@@ -552,11 +542,10 @@ describe('documentSearchSlice', () => {
     ];
     
     // Mock the service chain
-    mockDataService.searchDocumentsByKeyword
-      .mockResolvedValueOnce(['100877-1-0'])  // motion
-      .mockResolvedValueOnce(['100877-1-0']);  // summary
+    mockDocumentSearchService.searchByMultipleKeywords
+      .mockResolvedValueOnce(['100877-1-0']);
     
-    mockDataService.resolveDocumentIds.mockResolvedValueOnce(mockDocuments);
+    mockDocumentSearchService.resolveDocuments.mockResolvedValueOnce(mockDocuments);
     
     await store.dispatch(searchDocuments({ 
       keywords: ['motion', 'summary'], 
@@ -660,18 +649,29 @@ describe('Document Search Integration', () => {
   beforeEach(() => {
     // Create store with mock services
     store = createAppStore({
-      dataService: {
-        loadDocumentSearchKeywords: async () => ['motion', 'deposition', 'order'],
-        searchDocumentsByKeyword: async (keyword: string) => {
-          // Mock keyword results
-          const results = {
+      documentSearchService: {
+        loadKeywords: async () => ['motion', 'deposition', 'order'],
+        searchByMultipleKeywords: async (keywords: string[], operator: 'AND' | 'OR') => {
+          // Mock combined results based on operator
+          const keywordResults = {
             'motion': ['100877-1-0', '234561-3-0'],
             'deposition': ['100877-5-0', '567890-2-0'],
             'order': ['100877-1-0', '789012-1-0'],
           };
-          return results[keyword as keyof typeof results] || [];
+          
+          const sets = keywords.map(k => keywordResults[k as keyof typeof keywordResults] || []);
+          
+          if (operator === 'AND') {
+            return sets.reduce((intersection, currentSet) => 
+              intersection.filter(id => currentSet.includes(id))
+            );
+          } else {
+            const unionSet = new Set<string>();
+            sets.forEach(set => set.forEach(id => unionSet.add(id)));
+            return Array.from(unionSet);
+          }
         },
-        resolveDocumentIds: async (ids: string[]) => {
+        resolveDocuments: async (ids: string[]) => {
           return ids.map(id => ({
             id,
             caseId: parseInt(id.split('-')[0]),
@@ -682,7 +682,7 @@ describe('Document Search Integration', () => {
             court: 'cacd',
           }));
         },
-        clearDocumentSearchCache: async () => {},
+        clearCache: async () => {},
       } as any,
     });
   });
@@ -1022,7 +1022,7 @@ This phase works independently by:
 ## Files Created/Modified
 
 - `src/store/documentSearchSlice.ts` (new)
-- `src/store/index.ts` (enhanced)
+- `src/store/index.ts` (enhanced to inject documentSearchService)
 - `src/store/types.ts` (enhanced)
 - `src/hooks/redux.ts` (enhanced)
 - `src/store/__tests__/documentSearchSlice.test.ts` (new)

@@ -4,33 +4,32 @@
 Extend the data service layer to support document-level search operations, including keyword loading, document ID resolution, and search result enrichment.
 
 ## Deliverables
-1. **Enhanced `dataService.ts`** - Add document search methods
-2. **New service `documentSearchService.ts`** - Dedicated document search functionality
-3. **Document resolution utilities** - Convert document IDs to full document metadata
-4. **Caching strategy** - Efficient keyword file loading and caching
+1. **New service `documentSearchService.ts`** - Dedicated document search functionality
+2. **Document resolution utilities** - Convert document IDs to full document metadata
+3. **Caching strategy** - Efficient keyword file loading and caching
 
 ## Service Interface
 
 ### Core Methods
 
 ```typescript
-// Add to src/services/dataService.ts
-export interface DocumentSearchMethods {
+// Standalone document search service interface
+export interface DocumentSearchService {
   // Load master keywords list (kept in memory)
-  loadDocumentSearchKeywords(): Promise<string[]>;
+  loadKeywords(): Promise<string[]>;
   
   // Search for documents by keyword (lazy loads keyword file)
-  searchDocumentsByKeyword(keyword: string): Promise<string[]>;
+  searchByKeyword(keyword: string): Promise<string[]>;
+  
+  // Search by multiple keywords with AND/OR logic
+  searchByMultipleKeywords(keywords: string[], operator: 'AND' | 'OR'): Promise<string[]>;
   
   // Convert document IDs to full document objects
-  resolveDocumentIds(documentIds: string[]): Promise<SearchableDocument[]>;
+  resolveDocuments(documentIds: string[]): Promise<SearchableDocument[]>;
   
   // Clear document search cache
-  clearDocumentSearchCache(): void;
+  clearCache(): void;
 }
-
-// Extended data service interface
-export interface ExtendedDataService extends DataService, DocumentSearchMethods {}
 ```
 
 ### Data Types
@@ -70,175 +69,7 @@ export interface DocumentSearchCache {
 
 ## Implementation
 
-### 1. Enhanced dataService.ts
-
-```typescript
-// Add to existing createDataService factory
-export function createDataService() {
-  let localCaseIndex: CaseIndex | null = null;
-  const localDocumentCache = new Map<number, Document[]>();
-  
-  // Document search cache
-  const documentSearchCache: DocumentSearchCache = {
-    keywords: null,
-    keywordFiles: new Map(),
-    resolvedDocuments: new Map()
-  };
-
-  return {
-    // ... existing methods ...
-
-    async loadDocumentSearchKeywords(): Promise<string[]> {
-      if (documentSearchCache.keywords) {
-        return documentSearchCache.keywords;
-      }
-
-      const response = await fetch('/data/document-search/keywords.json');
-      if (!response.ok) {
-        throw new Error(`Failed to load document search keywords: ${response.statusText}`);
-      }
-
-      const data = await response.json() as DocumentSearchKeywords;
-      if (!data.keywords || !Array.isArray(data.keywords)) {
-        throw new Error('Invalid keywords format received from server');
-      }
-
-      documentSearchCache.keywords = data.keywords;
-      return data.keywords;
-    },
-
-    async searchDocumentsByKeyword(keyword: string): Promise<string[]> {
-      // Check cache first
-      if (documentSearchCache.keywordFiles.has(keyword)) {
-        return documentSearchCache.keywordFiles.get(keyword)!;
-      }
-
-      const response = await fetch(`/data/document-search/keywords/${keyword}.json`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          // Keyword not found - return empty array
-          documentSearchCache.keywordFiles.set(keyword, []);
-          return [];
-        }
-        throw new Error(`Failed to load keyword file for '${keyword}': ${response.statusText}`);
-      }
-
-      const data = await response.json() as DocumentSearchResult;
-      if (!data.documentIds || !Array.isArray(data.documentIds)) {
-        throw new Error(`Invalid keyword file format for '${keyword}'`);
-      }
-
-      documentSearchCache.keywordFiles.set(keyword, data.documentIds);
-      return data.documentIds;
-    },
-
-    async resolveDocumentIds(documentIds: string[]): Promise<SearchableDocument[]> {
-      const resolved: SearchableDocument[] = [];
-      const toFetch: string[] = [];
-
-      // Check cache for already resolved documents
-      for (const id of documentIds) {
-        if (documentSearchCache.resolvedDocuments.has(id)) {
-          resolved.push(documentSearchCache.resolvedDocuments.get(id)!);
-        } else {
-          toFetch.push(id);
-        }
-      }
-
-      // Fetch missing documents
-      if (toFetch.length > 0) {
-        const newlyResolved = await this._fetchDocumentsByIds(toFetch);
-        for (const doc of newlyResolved) {
-          documentSearchCache.resolvedDocuments.set(doc.id, doc);
-          resolved.push(doc);
-        }
-      }
-
-      return resolved;
-    },
-
-    async _fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDocument[]> {
-      // Group document IDs by case ID for efficient loading
-      const caseGroups = new Map<number, string[]>();
-      
-      for (const id of documentIds) {
-        const { caseId } = this._parseDocumentId(id);
-        if (!caseGroups.has(caseId)) {
-          caseGroups.set(caseId, []);
-        }
-        caseGroups.get(caseId)!.push(id);
-      }
-
-      const results: SearchableDocument[] = [];
-
-      // Load documents by case
-      for (const [caseId, docIds] of caseGroups.entries()) {
-        try {
-          const caseDocuments = await this.loadCaseDocuments(caseId);
-          const caseSummary = localCaseIndex?.cases.find(c => c.id === caseId);
-          
-          for (const docId of docIds) {
-            const { documentNumber, attachmentNumber } = this._parseDocumentId(docId);
-            
-            const document = caseDocuments.find(d => 
-              d.documentNumber === documentNumber && 
-              d.attachmentNumber === attachmentNumber
-            );
-            
-            if (document) {
-              results.push({
-                id: docId,
-                caseId,
-                documentNumber,
-                attachmentNumber,
-                description: document.description,
-                caseName: caseSummary?.name || 'Unknown Case',
-                court: caseSummary?.court || 'Unknown Court',
-                dateCreated: document.dateCreated,
-                filePath: document.filePath,
-                pageCount: document.pageCount,
-                fileSize: document.fileSize
-              });
-            }
-          }
-        } catch (error) {
-          console.warn(`Failed to load documents for case ${caseId}:`, error);
-        }
-      }
-
-      return results;
-    },
-
-    _parseDocumentId(documentId: string): { caseId: number; documentNumber: string; attachmentNumber: number } {
-      const parts = documentId.split('-');
-      if (parts.length !== 3) {
-        throw new Error(`Invalid document ID format: ${documentId}`);
-      }
-      
-      return {
-        caseId: parseInt(parts[0], 10),
-        documentNumber: parts[1],
-        attachmentNumber: parseInt(parts[2], 10)
-      };
-    },
-
-    clearDocumentSearchCache(): void {
-      documentSearchCache.keywords = null;
-      documentSearchCache.keywordFiles.clear();
-      documentSearchCache.resolvedDocuments.clear();
-    },
-
-    // Enhanced clear cache to include document search
-    clearCache(): void {
-      localCaseIndex = null;
-      localDocumentCache.clear();
-      this.clearDocumentSearchCache();
-    }
-  };
-}
-```
-
-### 2. Dedicated Document Search Service
+### Document Search Service
 
 Create `src/services/documentSearchService.ts`:
 
@@ -312,9 +143,82 @@ class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   async resolveDocuments(documentIds: string[]): Promise<SearchableDocument[]> {
-    // Implementation would be similar to dataService._fetchDocumentsByIds
-    // but this service could be more focused on search-specific operations
-    throw new Error('resolveDocuments not yet implemented in standalone service');
+    const resolved: SearchableDocument[] = [];
+    const toFetch: string[] = [];
+
+    // Check cache for already resolved documents
+    for (const id of documentIds) {
+      if (this.documentsCache.has(id)) {
+        resolved.push(this.documentsCache.get(id)!);
+      } else {
+        toFetch.push(id);
+      }
+    }
+
+    // Fetch missing documents
+    if (toFetch.length > 0) {
+      const newlyResolved = await this._fetchDocumentsByIds(toFetch);
+      for (const doc of newlyResolved) {
+        this.documentsCache.set(doc.id, doc);
+        resolved.push(doc);
+      }
+    }
+
+    return resolved;
+  }
+
+  private async _fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDocument[]> {
+    // Group document IDs by case ID for efficient loading
+    const caseGroups = new Map<number, string[]>();
+    
+    for (const id of documentIds) {
+      const { caseId } = this._parseDocumentId(id);
+      if (!caseGroups.has(caseId)) {
+        caseGroups.set(caseId, []);
+      }
+      caseGroups.get(caseId)!.push(id);
+    }
+
+    const results: SearchableDocument[] = [];
+
+    // Load documents by case - we'll need to integrate with dataService here
+    // For now, return mock data for independence
+    for (const [caseId, docIds] of caseGroups.entries()) {
+      for (const docId of docIds) {
+        const { documentNumber, attachmentNumber } = this._parseDocumentId(docId);
+        
+        // TODO: In real implementation, integrate with dataService.loadCaseDocuments
+        // For testing purposes, create mock documents
+        results.push({
+          id: docId,
+          caseId,
+          documentNumber,
+          attachmentNumber,
+          description: `Mock document for ${docId}`,
+          caseName: `Mock Case ${caseId}`,
+          court: 'cacd',
+          dateCreated: new Date().toISOString(),
+          filePath: `${caseId}/${documentNumber}-${attachmentNumber}.pdf`,
+          pageCount: 10,
+          fileSize: 1024 * 1024
+        });
+      }
+    }
+
+    return results;
+  }
+
+  private _parseDocumentId(documentId: string): { caseId: number; documentNumber: string; attachmentNumber: number } {
+    const parts = documentId.split('-');
+    if (parts.length !== 3) {
+      throw new Error(`Invalid document ID format: ${documentId}`);
+    }
+    
+    return {
+      caseId: parseInt(parts[0], 10),
+      documentNumber: parts[1],
+      attachmentNumber: parseInt(parts[2], 10)
+    };
   }
 
   clearCache(): void {
@@ -328,6 +232,12 @@ export function createDocumentSearchService(): DocumentSearchService {
   return new DocumentSearchServiceImpl();
 }
 
+// Factory function for dependency injection
+export function createDocumentSearchService(): DocumentSearchService {
+  return new DocumentSearchServiceImpl();
+}
+
+// Default instance for convenience
 export const documentSearchService = createDocumentSearchService();
 ```
 
@@ -465,24 +375,37 @@ describe('DocumentSearchService', () => {
 });
 ```
 
-### 2. Integration Tests
+### 2. Service Integration Tests
 
-Create `src/services/__tests__/dataService.documentSearch.test.ts`:
+Create `src/services/__tests__/documentSearchService.integration.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createDataService } from '../dataService';
+import { createDocumentSearchService } from '../documentSearchService';
 
-describe('DataService Document Search Integration', () => {
-  let dataService: ReturnType<typeof createDataService>;
+describe('DocumentSearchService Integration', () => {
+  let service: DocumentSearchService;
 
   beforeEach(() => {
-    dataService = createDataService();
+    service = createDocumentSearchService();
   });
 
-  it('should integrate document search with existing case loading', async () => {
-    // Test that document search works with loaded case data
-    // This would require mocked case data and document files
+  it('should perform complete search workflow', async () => {
+    // Load keywords
+    const keywords = await service.loadKeywords();
+    expect(keywords.length).toBeGreaterThan(0);
+    
+    // Search by keyword
+    const results = await service.searchByKeyword(keywords[0]);
+    expect(Array.isArray(results)).toBe(true);
+    
+    // Resolve documents if results found
+    if (results.length > 0) {
+      const documents = await service.resolveDocuments(results.slice(0, 5));
+      expect(documents.length).toBeGreaterThan(0);
+      expect(documents[0]).toHaveProperty('id');
+      expect(documents[0]).toHaveProperty('description');
+    }
   });
 });
 ```
@@ -707,10 +630,9 @@ This phase works independently by:
 
 ## Files Created/Modified
 
-- `src/services/dataService.ts` (enhanced)
 - `src/services/documentSearchService.ts` (new)
 - `src/types/document.types.ts` (enhanced)
 - `src/types/guards.ts` (enhanced)
 - `src/services/__tests__/documentSearchService.test.ts` (new)
-- `src/services/__tests__/dataService.documentSearch.test.ts` (new)
+- `src/services/__tests__/documentSearchService.integration.test.ts` (new)
 - `public/tests/test-document-search-service.html` (new)
