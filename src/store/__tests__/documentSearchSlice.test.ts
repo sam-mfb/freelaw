@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
+import type { DocumentSearchState } from '../documentSearchSlice';
 import documentSearchReducer, {
   setSearchKeywords,
   addSearchKeyword,
@@ -19,6 +20,9 @@ import documentSearchReducer, {
   selectSearchStats,
 } from '../documentSearchSlice';
 import type { SearchableDocument } from '../../types/document.types';
+import type { ThunkDispatch } from '@reduxjs/toolkit';
+import type { AnyAction } from 'redux';
+import type { ThunkExtra } from '../types';
 
 // Mock services
 const mockDocumentSearchService = {
@@ -29,7 +33,22 @@ const mockDocumentSearchService = {
   clearCache: vi.fn(),
 };
 
-const createTestStore = () => {
+const mockDataService = {
+  loadCaseIndex: vi.fn(),
+  loadCaseDocuments: vi.fn(),
+};
+
+type TestState = {
+  documentSearch: DocumentSearchState;
+};
+
+type TestDispatch = ThunkDispatch<TestState, ThunkExtra, AnyAction>;
+
+type TestStore = ReturnType<typeof configureStore<TestState>> & {
+  dispatch: TestDispatch;
+};
+
+const createTestStore = (): TestStore => {
   return configureStore({
     reducer: {
       documentSearch: documentSearchReducer,
@@ -38,11 +57,14 @@ const createTestStore = () => {
       getDefaultMiddleware({
         thunk: {
           extraArgument: {
-            services: { documentSearchService: mockDocumentSearchService },
-          },
+            services: { 
+              documentSearchService: mockDocumentSearchService,
+              dataService: mockDataService,
+            },
+          } as ThunkExtra,
         },
       }),
-  });
+  }) as TestStore;
 };
 
 describe('documentSearchSlice', () => {
