@@ -103,6 +103,10 @@ describe('createPDFService', () => {
     });
 
     it('should return false when fetch throws an error', async () => {
+      // Suppress expected error output
+      const originalConsoleError = console.error;
+      console.error = vi.fn();
+
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       const service = createPDFService();
@@ -110,6 +114,9 @@ describe('createPDFService', () => {
       const result = await service.checkPDFExists(filePath);
 
       expect(result).toBe(false);
+      
+      // Restore console.error
+      console.error = originalConsoleError;
     });
   });
 
