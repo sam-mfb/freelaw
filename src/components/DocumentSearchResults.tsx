@@ -62,10 +62,7 @@ export const DocumentSearchResults: React.FC = () => {
 
       <div className="results-list">
         {results.map((document) => (
-          <div
-            key={document.id}
-            className="document-result-card"
-          >
+          <div key={document.id} className="document-result-card">
             <div className="document-header">
               <h4 className="document-title">
                 <span
@@ -97,7 +94,7 @@ export const DocumentSearchResults: React.FC = () => {
               {document.pageCount && <span>{document.pageCount} pages</span>}
               {document.fileSize && <span>{(document.fileSize / 1024).toFixed(1)} KB</span>}
             </div>
-            
+
             {document.filePath && (
               <div className="document-actions">
                 <button
