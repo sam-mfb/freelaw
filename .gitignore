@@ -38,8 +38,7 @@ venv/
 Thumbs.db
 
 # Generated index files
-public/data/case-index.json
-public/data/documents/
+public/data/
 
 # Environment variables
 .env

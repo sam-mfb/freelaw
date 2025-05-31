@@ -26,4 +26,32 @@ export interface RecapDocument {
   filepath_local: string | null;
   is_available: boolean;
   sha1: string;
+  attachment_number?: number;
+}
+
+export interface DocumentSearchKeywords {
+  keywords: string[];
+}
+
+export interface DocumentSearchResult {
+  keyword: string;
+  documentIds: string[];
+}
+
+export interface DocumentSearchIndex {
+  [keyword: string]: string[];
+}
+
+export interface SearchableDocument {
+  id: string;
+  caseId: number;
+  documentNumber: string;
+  attachmentNumber: number | null;
+  description: string;
+  caseName: string;
+  court: string;
+  dateCreated?: string;
+  filePath?: string;
+  pageCount?: number;
+  fileSize?: number;
 }
