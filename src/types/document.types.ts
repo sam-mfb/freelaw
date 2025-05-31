@@ -26,6 +26,7 @@ export interface RecapDocument {
   filepath_local: string | null;
   is_available: boolean;
   sha1: string;
+  attachment_number?: number;
 }
 
 export interface DocumentSearchKeywords {
@@ -45,7 +46,7 @@ export interface SearchableDocument {
   id: string; // "caseId-docNum-attachNum"
   caseId: number;
   documentNumber: string;
-  attachmentNumber: number;
+  attachmentNumber: number | null;
   description: string;
   caseName: string;
   court: string;

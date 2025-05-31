@@ -101,9 +101,9 @@ describe('DocumentSearchService Integration', () => {
   it('should handle document ID parsing correctly', async () => {
     // Test the document resolution with known ID patterns
     const testIds = [
-      '100877-1-0', // Standard document
+      '100877-1-0', // Standard document with attachment 0
       '234561-15-2', // Multi-digit document number with attachment
-      '789012-1-0', // Another standard document
+      '789012-1-null', // Main document without attachment
     ];
 
     const documents = await service.resolveDocuments(testIds);
@@ -120,10 +120,10 @@ describe('DocumentSearchService Integration', () => {
     expect(documents[1].documentNumber).toBe('15');
     expect(documents[1].attachmentNumber).toBe(2);
 
-    // Verify third document
+    // Verify third document (main document)
     expect(documents[2].caseId).toBe(789012);
     expect(documents[2].documentNumber).toBe('1');
-    expect(documents[2].attachmentNumber).toBe(0);
+    expect(documents[2].attachmentNumber).toBe(null);
   });
 
   it('should properly clear and reload cache', async () => {

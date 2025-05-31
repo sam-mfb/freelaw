@@ -186,7 +186,7 @@ describe('DocumentSearchService', () => {
   });
 
   it('should resolve document IDs to full documents', async () => {
-    const documentIds = ['100877-1-0', '234561-5-0'];
+    const documentIds = ['100877-1-0', '234561-5-null'];
     const documents = await service.resolveDocuments(documentIds);
 
     expect(documents).toHaveLength(2);
@@ -195,6 +195,15 @@ describe('DocumentSearchService', () => {
       caseId: 100877,
       documentNumber: '1',
       attachmentNumber: 0,
+      description: expect.any(String),
+      caseName: expect.any(String),
+      court: expect.any(String),
+    });
+    expect(documents[1]).toMatchObject({
+      id: '234561-5-null',
+      caseId: 234561,
+      documentNumber: '5',
+      attachmentNumber: null,
       description: expect.any(String),
       caseName: expect.any(String),
       court: expect.any(String),

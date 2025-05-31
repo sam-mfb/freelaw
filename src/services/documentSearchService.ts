@@ -29,18 +29,26 @@ function createDocumentSearchState(): DocumentSearchState {
 function parseDocumentId(documentId: string): {
   caseId: number;
   documentNumber: string;
-  attachmentNumber: number;
+  attachmentNumber: number | null;
 } {
   const parts = documentId.split('-');
   if (parts.length !== 3) {
     throw new Error(`Invalid document ID format: ${documentId}`);
   }
 
-  return {
-    caseId: parseInt(parts[0], 10),
-    documentNumber: parts[1],
-    attachmentNumber: parseInt(parts[2], 10),
-  };
+  const caseId = parseInt(parts[0], 10);
+  const documentNumber = parts[1];
+  const attachmentNumber = parts[2] === 'null' ? null : parseInt(parts[2], 10);
+
+  if (isNaN(caseId)) {
+    throw new Error(`Invalid case ID in document ID: ${documentId}`);
+  }
+
+  if (attachmentNumber !== null && isNaN(attachmentNumber)) {
+    throw new Error(`Invalid attachment number in document ID: ${documentId}`);
+  }
+
+  return { caseId, documentNumber, attachmentNumber };
 }
 
 async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDocument[]> {
