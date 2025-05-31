@@ -62,7 +62,7 @@ export const DocumentSearchResults: React.FC = () => {
 
       <div className="results-list">
         {results.map((document) => (
-          <div key={document.id} className="document-result-card">
+          <div key={document.searchId} className="document-result-card">
             <div className="document-header">
               <h4 className="document-title">
                 <span
