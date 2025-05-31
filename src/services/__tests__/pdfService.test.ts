@@ -103,9 +103,8 @@ describe('createPDFService', () => {
     });
 
     it('should return false when fetch throws an error', async () => {
-      // Suppress expected error output
-      const originalConsoleError = console.error;
-      console.error = vi.fn();
+      // Suppress expected error output using vitest's built-in console mocking
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
@@ -116,7 +115,7 @@ describe('createPDFService', () => {
       expect(result).toBe(false);
       
       // Restore console.error
-      console.error = originalConsoleError;
+      consoleErrorSpy.mockRestore();
     });
   });
 
