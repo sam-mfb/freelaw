@@ -35,27 +35,27 @@ async function readJsonFile(filePath: string): Promise<RawCaseData | null> {
 }
 
 function processDocumentsForKeywords(
-  caseData: RawCaseData, 
-  keywordIndex: Map<string, Set<string>>
+  caseData: RawCaseData,
+  keywordIndex: Map<string, Set<string>>,
 ): void {
   if (!caseData.docket_entries) return;
-  
+
   for (const entry of caseData.docket_entries) {
     if (!entry.recap_documents) continue;
-    
+
     for (const doc of entry.recap_documents) {
       if (!doc.is_available || !doc.description) continue;
-      
+
       const documentId = createDocumentId(
         caseData.id,
         doc.document_number ?? '0',
-        doc.attachment_number !== null && doc.attachment_number !== undefined 
-          ? doc.attachment_number 
-          : 'null'
+        doc.attachment_number !== null && doc.attachment_number !== undefined
+          ? doc.attachment_number
+          : 'null',
       );
-      
+
       const keywords = extractKeywords(doc.description);
-      
+
       for (const keyword of keywords) {
         if (!keywordIndex.has(keyword)) {
           keywordIndex.set(keyword, new Set());
@@ -67,40 +67,39 @@ function processDocumentsForKeywords(
 }
 
 async function writeDocumentSearchIndex(
-  config: BuildConfig, 
-  keywordIndex: Map<string, Set<string>>
+  config: BuildConfig,
+  keywordIndex: Map<string, Set<string>>,
 ): Promise<void> {
   const searchDir = path.join(config.outputDir, 'document-search');
   const keywordsDir = path.join(searchDir, 'keywords');
-  
+
   await ensureDirectoryExists(searchDir);
   await ensureDirectoryExists(keywordsDir);
-  
+
   const allKeywords = Array.from(keywordIndex.keys()).sort();
   const keywordsFile = {
-    keywords: allKeywords
+    keywords: allKeywords,
   };
-  
-  await fs.writeFile(
-    path.join(searchDir, 'keywords.json'),
-    JSON.stringify(keywordsFile, null, 2)
-  );
-  
+
+  await fs.writeFile(path.join(searchDir, 'keywords.json'), JSON.stringify(keywordsFile, null, 2));
+
   for (const [keyword, documentIds] of keywordIndex.entries()) {
     const keywordFile = {
       keyword,
-      documentIds: Array.from(documentIds).sort()
+      documentIds: Array.from(documentIds).sort(),
     };
-    
+
     await fs.writeFile(
       path.join(keywordsDir, `${keyword}.json`),
-      JSON.stringify(keywordFile, null, 2)
+      JSON.stringify(keywordFile, null, 2),
     );
   }
-  
+
   console.log(`Document search index complete!`);
   console.log(`- Found ${allKeywords.length} unique keywords`);
-  console.log(`- Indexed ${Array.from(keywordIndex.values()).reduce((sum, set) => sum + set.size, 0)} document references`);
+  console.log(
+    `- Indexed ${Array.from(keywordIndex.values()).reduce((sum, set) => sum + set.size, 0)} document references`,
+  );
 }
 
 async function buildIndices(config: BuildConfig): Promise<void> {

@@ -3,28 +3,28 @@ import { extractKeywords, createDocumentId, parseDocumentId } from '../extractKe
 
 describe('extractKeywords', () => {
   it('should extract legal keywords correctly', () => {
-    const description = "Motion for Summary Judgment on Patent Claims";
+    const description = 'Motion for Summary Judgment on Patent Claims';
     const keywords = extractKeywords(description);
-    
+
     expect(keywords).toContain('motion');
     expect(keywords).toContain('summary');
     expect(keywords).toContain('judgment');
     expect(keywords).toContain('patent');
     expect(keywords).toContain('claims');
   });
-  
+
   it('should filter stop words', () => {
-    const description = "The Motion for the Summary";
+    const description = 'The Motion for the Summary';
     const keywords = extractKeywords(description);
-    
+
     expect(keywords).not.toContain('the');
     expect(keywords).not.toContain('for');
   });
 
   it('should handle punctuation correctly', () => {
-    const description = "Motion, Order & Response; Brief-Filing";
+    const description = 'Motion, Order & Response; Brief-Filing';
     const keywords = extractKeywords(description);
-    
+
     expect(keywords).toContain('motion');
     expect(keywords).toContain('order');
     expect(keywords).toContain('response');
@@ -33,18 +33,18 @@ describe('extractKeywords', () => {
   });
 
   it('should handle case insensitivity', () => {
-    const description = "MOTION for Summary JUDGMENT";
+    const description = 'MOTION for Summary JUDGMENT';
     const keywords = extractKeywords(description);
-    
+
     expect(keywords).toContain('motion');
     expect(keywords).toContain('summary');
     expect(keywords).toContain('judgment');
   });
 
   it('should filter short words (less than 3 characters)', () => {
-    const description = "Re: Motion to File Ex Parte";
+    const description = 'Re: Motion to File Ex Parte';
     const keywords = extractKeywords(description);
-    
+
     expect(keywords).not.toContain('re');
     expect(keywords).not.toContain('ex');
     expect(keywords).toContain('motion');
@@ -53,9 +53,9 @@ describe('extractKeywords', () => {
   });
 
   it('should prioritize legal keywords even if short', () => {
-    const description = "Motion and Order regarding Discovery";
+    const description = 'Motion and Order regarding Discovery';
     const keywords = extractKeywords(description);
-    
+
     expect(keywords).toContain('motion');
     expect(keywords).toContain('order');
     expect(keywords).toContain('discovery');
@@ -63,17 +63,17 @@ describe('extractKeywords', () => {
   });
 
   it('should deduplicate keywords', () => {
-    const description = "Motion for Motion to File Motion";
+    const description = 'Motion for Motion to File Motion';
     const keywords = extractKeywords(description);
-    
-    const motionCount = keywords.filter(k => k === 'motion').length;
+
+    const motionCount = keywords.filter((k) => k === 'motion').length;
     expect(motionCount).toBe(1);
   });
 
   it('should return sorted keywords', () => {
-    const description = "Response to Motion for Discovery";
+    const description = 'Response to Motion for Discovery';
     const keywords = extractKeywords(description);
-    
+
     const sorted = [...keywords].sort();
     expect(keywords).toEqual(sorted);
   });
@@ -85,9 +85,10 @@ describe('extractKeywords', () => {
   });
 
   it('should extract keywords from complex legal descriptions', () => {
-    const description = "Defendant's Opposition to Plaintiff's Motion for Preliminary Injunction and Request for Expedited Hearing";
+    const description =
+      "Defendant's Opposition to Plaintiff's Motion for Preliminary Injunction and Request for Expedited Hearing";
     const keywords = extractKeywords(description);
-    
+
     expect(keywords).toContain('defendant');
     expect(keywords).toContain('opposition');
     expect(keywords).toContain('plaintiff');
@@ -128,7 +129,7 @@ describe('parseDocumentId', () => {
     expect(result).toEqual({
       caseId: 100877,
       documentNumber: '15',
-      attachmentNumber: 0
+      attachmentNumber: 0,
     });
   });
 
@@ -137,7 +138,7 @@ describe('parseDocumentId', () => {
     expect(result).toEqual({
       caseId: 234561,
       documentNumber: '5A',
-      attachmentNumber: 2
+      attachmentNumber: 2,
     });
   });
 
@@ -146,7 +147,7 @@ describe('parseDocumentId', () => {
     expect(result).toEqual({
       caseId: 100877,
       documentNumber: '15',
-      attachmentNumber: null
+      attachmentNumber: null,
     });
   });
 
@@ -161,7 +162,7 @@ describe('parseDocumentId', () => {
     expect(result).toEqual({
       caseId: 0,
       documentNumber: '0',
-      attachmentNumber: 0
+      attachmentNumber: 0,
     });
   });
 });

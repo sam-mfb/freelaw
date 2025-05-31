@@ -113,7 +113,7 @@ describe('createPDFService', () => {
       const result = await service.checkPDFExists(filePath);
 
       expect(result).toBe(false);
-      
+
       // Restore console.error
       consoleErrorSpy.mockRestore();
     });

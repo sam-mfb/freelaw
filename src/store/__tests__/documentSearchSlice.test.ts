@@ -57,7 +57,7 @@ const createTestStore = (): TestStore => {
       getDefaultMiddleware({
         thunk: {
           extraArgument: {
-            services: { 
+            services: {
               documentSearchService: mockDocumentSearchService,
               dataService: mockDataService,
             },
