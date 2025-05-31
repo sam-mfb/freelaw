@@ -225,27 +225,6 @@ export function isDocumentSearchResult(data: unknown): data is DocumentSearchRes
   );
 }
 
-export function isSearchableDocument(data: unknown): data is Document {
-  if (!data || typeof data !== 'object') {
-    return false;
-  }
-
-  const obj = data as Record<string, unknown>;
-
-  return (
-    typeof obj.id === 'string' &&
-    typeof obj.caseId === 'number' &&
-    typeof obj.documentNumber === 'string' &&
-    (obj.attachmentNumber === null || typeof obj.attachmentNumber === 'number') &&
-    typeof obj.description === 'string' &&
-    typeof obj.caseName === 'string' &&
-    typeof obj.court === 'string' &&
-    (obj.dateCreated === undefined || typeof obj.dateCreated === 'string') &&
-    (obj.filePath === undefined || typeof obj.filePath === 'string') &&
-    (obj.pageCount === undefined || typeof obj.pageCount === 'number') &&
-    (obj.fileSize === undefined || typeof obj.fileSize === 'number')
-  );
-}
 
 export function parseDocumentId(id: string): {
   caseId: number;
