@@ -411,11 +411,6 @@
   max-width: none;
 }
 
-.document-search-toggle {
-  padding: 20px;
-  text-align: center;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .document-search-header {

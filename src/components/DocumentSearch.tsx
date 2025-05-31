@@ -4,9 +4,7 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
   loadDocumentKeywords,
   searchDocuments,
-  setSearchActive,
   clearSearch,
-  selectCurrentSearch,
   selectSearchState,
 } from '../store/documentSearchSlice';
 import { DocumentSearchKeywords } from './DocumentSearchKeywords';
@@ -18,7 +16,6 @@ interface DocumentSearchProps {
 
 export const DocumentSearch: React.FC<DocumentSearchProps> = ({ className = '' }) => {
   const dispatch = useAppDispatch();
-  const { isActive } = useAppSelector(selectCurrentSearch);
   const { loading, error, hasResults, isEmpty } = useAppSelector(selectSearchState);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -30,14 +27,6 @@ export const DocumentSearch: React.FC<DocumentSearchProps> = ({ className = '' }
     }
   }, [dispatch, isInitialized]);
 
-  const handleToggleSearch = (): void => {
-    if (isActive) {
-      dispatch(setSearchActive(false));
-    } else {
-      dispatch(setSearchActive(true));
-    }
-  };
-
   const handleClearSearch = (): void => {
     dispatch(clearSearch());
   };
@@ -47,20 +36,6 @@ export const DocumentSearch: React.FC<DocumentSearchProps> = ({ className = '' }
       dispatch(searchDocuments({ keywords, operator }));
     }
   };
-
-  if (!isActive) {
-    return (
-      <div className={`document-search-toggle ${className}`}>
-        <button
-          onClick={handleToggleSearch}
-          className="btn btn-primary"
-          aria-label="Open document search"
-        >
-          Search Documents
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className={`document-search ${className}`}>
@@ -74,13 +49,6 @@ export const DocumentSearch: React.FC<DocumentSearchProps> = ({ className = '' }
             aria-label="Clear search"
           >
             Clear
-          </button>
-          <button
-            onClick={handleToggleSearch}
-            className="btn btn-outline"
-            aria-label="Close document search"
-          >
-            ✕
           </button>
         </div>
       </div>
