@@ -12,8 +12,6 @@
     "build:index:sample": "vite-node scripts/buildIndex.ts --data-dir=./sample-data",
     "build:document-search": "vite-node scripts/buildDocumentSearchIndex.ts --data-dir=./data",
     "build:document-search:sample": "vite-node scripts/buildDocumentSearchIndex.ts --data-dir=./sample-data",
-    "build:index:full": "npm run build:index && npm run build:document-search",
-    "build:index:full:sample": "npm run build:index:sample && npm run build:document-search:sample",
     "preview": "vite preview",
     "lint": "eslint src scripts --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
@@ -50,3 +48,4 @@
     "node": ">=18.0.0"
   }
 }
+
