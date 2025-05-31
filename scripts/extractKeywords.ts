@@ -57,7 +57,7 @@ export function extractKeywords(description: string): string[] {
 export function createDocumentId(
   caseId: number, 
   documentNumber: string, 
-  attachmentNumber: number
+  attachmentNumber: number | string
 ): string {
   return `${caseId}-${documentNumber}-${attachmentNumber}`;
 }
@@ -65,7 +65,7 @@ export function createDocumentId(
 export function parseDocumentId(documentId: string): {
   caseId: number;
   documentNumber: string; 
-  attachmentNumber: number;
+  attachmentNumber: number | null;
 } {
   const parts = documentId.split('-');
   if (parts.length !== 3) {
@@ -75,6 +75,6 @@ export function parseDocumentId(documentId: string): {
   return {
     caseId: parseInt(parts[0], 10),
     documentNumber: parts[1],
-    attachmentNumber: parseInt(parts[2], 10)
+    attachmentNumber: parts[2] === 'null' ? null : parseInt(parts[2], 10)
   };
 }

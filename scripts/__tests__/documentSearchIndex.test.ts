@@ -9,7 +9,7 @@ describe('Document Search Index Output', () => {
   beforeAll(() => {
     // Ensure the index is built with sample data
     try {
-      execSync('npm run build:index:sample', { stdio: 'ignore' });
+      execSync('npm run build:index:full:sample', { stdio: 'inherit' });
     } catch (error) {
       console.error('Failed to build sample index:', error);
     }
@@ -65,7 +65,8 @@ describe('Document Search Index Output', () => {
         const [caseId, docNum, attachNum] = parts;
         expect(Number.isInteger(Number(caseId))).toBe(true);
         expect(typeof docNum).toBe('string');
-        expect(Number.isInteger(Number(attachNum))).toBe(true);
+        // Attachment number can be 'null' or a number
+        expect(attachNum === 'null' || Number.isInteger(Number(attachNum))).toBe(true);
       }
       
       // Document IDs should be sorted

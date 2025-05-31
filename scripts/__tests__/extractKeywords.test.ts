@@ -115,6 +115,11 @@ describe('createDocumentId', () => {
     const id = createDocumentId(12345, '1', 3);
     expect(id).toBe('12345-1-3');
   });
+
+  it('should handle null attachment numbers', () => {
+    const id = createDocumentId(100877, '15', 'null');
+    expect(id).toBe('100877-15-null');
+  });
 });
 
 describe('parseDocumentId', () => {
@@ -133,6 +138,15 @@ describe('parseDocumentId', () => {
       caseId: 234561,
       documentNumber: '5A',
       attachmentNumber: 2
+    });
+  });
+
+  it('should handle null attachment numbers', () => {
+    const result = parseDocumentId('100877-15-null');
+    expect(result).toEqual({
+      caseId: 100877,
+      documentNumber: '15',
+      attachmentNumber: null
     });
   });
 

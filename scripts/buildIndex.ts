@@ -49,7 +49,9 @@ function processDocumentsForKeywords(
       const documentId = createDocumentId(
         caseData.id,
         doc.document_number || '0',
-        doc.attachment_number || 0
+        doc.attachment_number !== null && doc.attachment_number !== undefined 
+          ? doc.attachment_number 
+          : 'null'
       );
       
       const keywords = extractKeywords(doc.description);

@@ -1,7 +1,7 @@
 import type { RawCaseData, RawDocketEntry, RawRecapDocument, CaseIndex } from './index.types';
 import type { CaseSummary } from './case.types';
 import type { Court } from './court.types';
-import type { Document } from './document.types';
+import type { Document, DocumentSearchKeywords, DocumentSearchResult, SearchableDocument } from './document.types';
 
 export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
   if (!obj || typeof obj !== 'object') {
@@ -24,7 +24,8 @@ export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
       doc.page_count === null ||
       typeof doc.page_count === 'number') &&
     (doc.file_size === undefined || doc.file_size === null || typeof doc.file_size === 'number') &&
-    (doc.sha1 === undefined || doc.sha1 === null || typeof doc.sha1 === 'string')
+    (doc.sha1 === undefined || doc.sha1 === null || typeof doc.sha1 === 'string') &&
+    (doc.attachment_number === undefined || doc.attachment_number === null || typeof doc.attachment_number === 'number')
   );
 }
 
@@ -185,4 +186,70 @@ export async function safeJsonParse(response: Response): Promise<unknown> {
   } catch (error) {
     throw new Error(`Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+export function isDocumentSearchKeywords(obj: unknown): obj is DocumentSearchKeywords {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const data = obj as Record<string, unknown>;
+
+  return (
+    Array.isArray(data.keywords) &&
+    data.keywords.every((keyword) => typeof keyword === 'string')
+  );
+}
+
+export function isDocumentSearchResult(obj: unknown): obj is DocumentSearchResult {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const data = obj as Record<string, unknown>;
+
+  return (
+    typeof data.keyword === 'string' &&
+    Array.isArray(data.documentIds) &&
+    data.documentIds.every((id) => typeof id === 'string')
+  );
+}
+
+export function isSearchableDocument(obj: unknown): obj is SearchableDocument {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const doc = obj as Record<string, unknown>;
+
+  return (
+    typeof doc.id === 'string' &&
+    typeof doc.caseId === 'number' &&
+    typeof doc.documentNumber === 'string' &&
+    (doc.attachmentNumber === null || typeof doc.attachmentNumber === 'number') &&
+    typeof doc.description === 'string' &&
+    typeof doc.caseName === 'string' &&
+    typeof doc.court === 'string' &&
+    (doc.dateCreated === undefined || typeof doc.dateCreated === 'string') &&
+    (doc.filePath === undefined || typeof doc.filePath === 'string') &&
+    (doc.pageCount === undefined || typeof doc.pageCount === 'number') &&
+    (doc.fileSize === undefined || typeof doc.fileSize === 'number')
+  );
+}
+
+export function parseDocumentId(id: string): {
+  caseId: number;
+  documentNumber: string;
+  attachmentNumber: number | null;
+} {
+  const parts = id.split('-');
+  if (parts.length !== 3) {
+    throw new Error(`Invalid document ID format: ${id}`);
+  }
+  
+  return {
+    caseId: parseInt(parts[0], 10),
+    documentNumber: parts[1],
+    attachmentNumber: parts[2] === 'null' ? null : parseInt(parts[2], 10)
+  };
 }

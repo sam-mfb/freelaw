@@ -46,7 +46,7 @@ export interface SearchableDocument {
   id: string;
   caseId: number;
   documentNumber: string;
-  attachmentNumber: number;
+  attachmentNumber: number | null;
   description: string;
   caseName: string;
   court: string;
