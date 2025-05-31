@@ -82,7 +82,7 @@ async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDoc
         caseName: `Mock Case ${caseId}`,
         court: 'cacd',
         dateCreated: new Date().toISOString(),
-        filePath: `${caseId}/${documentNumber}-${attachmentNumber}.pdf`,
+        filePath: `${caseId}/${documentNumber}-${attachmentNumber === null ? 'main' : attachmentNumber}.pdf`,
         pageCount: 10,
         fileSize: 1024 * 1024,
       });

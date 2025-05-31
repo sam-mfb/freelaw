@@ -120,7 +120,7 @@ describe('DocumentSearchService Integration', () => {
     expect(documents[1].documentNumber).toBe('15');
     expect(documents[1].attachmentNumber).toBe(2);
 
-    // Verify third document (main document)
+    // Verify third document (null attachment)
     expect(documents[2].caseId).toBe(789012);
     expect(documents[2].documentNumber).toBe('1');
     expect(documents[2].attachmentNumber).toBe(null);

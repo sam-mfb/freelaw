@@ -10,6 +10,7 @@ export interface Document {
   sha1: string;
 }
 
+
 export interface DocketEntry {
   recap_documents: RecapDocument[];
   entry_number: number;
