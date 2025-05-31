@@ -3,19 +3,21 @@ import type {
   DocumentSearchResult,
   SearchableDocument,
 } from '../types/document.types';
+import { dataService } from './dataService';
+import type { Document } from '../types/document.types';
 
 export interface DocumentSearchService {
   loadKeywords(): Promise<string[]>;
   searchByKeyword(keyword: string): Promise<string[]>;
   searchByMultipleKeywords(keywords: string[], operator: 'AND' | 'OR'): Promise<string[]>;
-  resolveDocuments(documentIds: string[]): Promise<SearchableDocument[]>;
+  resolveDocuments(documentIds: string[]): Promise<Document[]>;
   clearCache(): void;
 }
 
 interface DocumentSearchState {
   keywordsCache: string[] | null;
   keywordFilesCache: Map<string, string[]>;
-  documentsCache: Map<string, SearchableDocument>;
+  documentsCache: Map<string, Document>;
 }
 
 function createDocumentSearchState(): DocumentSearchState {
@@ -51,7 +53,7 @@ function parseDocumentId(documentId: string): {
   return { caseId, documentNumber, attachmentNumber };
 }
 
-async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDocument[]> {
+async function fetchDocumentsByIds(documentIds: string[]): Promise<Document[]> {
   // Group document IDs by case ID for efficient loading
   const caseGroups = new Map<number, string[]>();
 
@@ -63,29 +65,19 @@ async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDoc
     caseGroups.get(caseId)!.push(id);
   }
 
-  const results: SearchableDocument[] = [];
+  const results: Document[] = [];
 
-  // Load documents by case - we'll need to integrate with dataService here
-  // For now, return mock data for independence
+  // Load documents by case
   for (const [caseId, docIds] of caseGroups.entries()) {
+    const caseDocuments = await dataService.loadCaseDocuments(caseId);
+    
     for (const docId of docIds) {
-      const { documentNumber, attachmentNumber } = parseDocumentId(docId);
-
-      // TODO: In real implementation, integrate with dataService.loadCaseDocuments
-      // For testing purposes, create mock documents
-      results.push({
-        id: docId,
-        caseId,
-        documentNumber,
-        attachmentNumber,
-        description: `Mock document for ${docId}`,
-        caseName: `Mock Case ${caseId}`,
-        court: 'cacd',
-        dateCreated: new Date().toISOString(),
-        filePath: `${caseId}/${documentNumber}-${attachmentNumber}.pdf`,
-        pageCount: 10,
-        fileSize: 1024 * 1024,
-      });
+      // Find the matching document by searchId
+      const doc = caseDocuments.find(d => d.searchId === docId);
+      
+      if (doc) {
+        results.push(doc);
+      }
     }
   }
 
@@ -149,8 +141,8 @@ export function createDocumentSearchService(): DocumentSearchService {
     }
   };
 
-  const resolveDocuments = async (documentIds: string[]): Promise<SearchableDocument[]> => {
-    const resolved: SearchableDocument[] = [];
+  const resolveDocuments = async (documentIds: string[]): Promise<Document[]> => {
+    const resolved: Document[] = [];
     const toFetch: string[] = [];
 
     // Check cache for already resolved documents
@@ -166,7 +158,7 @@ export function createDocumentSearchService(): DocumentSearchService {
     if (toFetch.length > 0) {
       const newlyResolved = await fetchDocumentsByIds(toFetch);
       for (const doc of newlyResolved) {
-        state.documentsCache.set(doc.id, doc);
+        state.documentsCache.set(doc.searchId, doc);
         resolved.push(doc);
       }
     }

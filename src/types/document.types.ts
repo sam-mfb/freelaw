@@ -1,13 +1,23 @@
 export interface Document {
+  // Database/API fields
   id: number;
   entryNumber: number;
   documentNumber: string;
+  attachmentNumber: number | null;
   description: string;
   dateFiled: string;
   pageCount: number | null;
   fileSize: number | null;
   filePath: string | null;
   sha1: string;
+  
+  // Case context fields
+  caseId: number;
+  caseName: string;
+  court: string;
+  
+  // Search index fields
+  searchId: string; // "caseId-docNum-attachNum" format
 }
 
 export interface DocketEntry {
@@ -42,19 +52,9 @@ export interface DocumentSearchIndex {
   [keyword: string]: string[];
 }
 
-export interface SearchableDocument {
-  id: string; // "caseId-docNum-attachNum"
-  caseId: number;
-  documentNumber: string;
-  attachmentNumber: number | null;
-  description: string;
-  caseName: string;
-  court: string;
-  dateCreated?: string;
-  filePath?: string;
-  pageCount?: number;
-  fileSize?: number;
-}
+// SearchableDocument is now deprecated - use Document instead
+// Keeping type alias for backward compatibility during migration
+export type SearchableDocument = Document;
 
 export interface DocumentSearchCache {
   keywords: string[] | null;

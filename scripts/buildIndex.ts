@@ -5,7 +5,7 @@ import type { Court } from '../src/types/court.types';
 import { COURT_MAPPINGS } from '../src/constants/courts';
 import { isRawCaseData } from '../src/types/guards';
 import { extractCaseSummary } from './extractCaseSummary';
-import { extractDocuments } from './extractDocuments';
+import { extractDocuments, type CaseContext } from './extractDocuments';
 import { extractKeywords, createDocumentId } from './extractKeywords';
 import type { CaseSummary } from '@/types/case.types';
 
@@ -147,7 +147,13 @@ async function buildIndices(config: BuildConfig): Promise<void> {
       }
     }
 
-    const documents = extractDocuments(caseData);
+    const caseContext: CaseContext = {
+      caseId: caseData.id,
+      caseName: caseSummary.name,
+      court: caseSummary.court || 'unknown'
+    };
+    
+    const documents = extractDocuments(caseData, caseContext);
     if (documents.length > 0) {
       const docFilePath = path.join(config.outputDir, 'documents', `${caseData.id}.json`);
       await fs.writeFile(docFilePath, JSON.stringify(documents, null, 2));
