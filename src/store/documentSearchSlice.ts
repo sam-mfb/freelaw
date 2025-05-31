@@ -126,6 +126,9 @@ const documentSearchSlice = createSlice({
         state.currentKeywords = [];
         state.searchResults = [];
         state.selectedDocumentId = null;
+        state.searchError = null;
+        state.totalResults = 0;
+        state.lastSearchTime = null;
       }
     },
 
@@ -148,6 +151,8 @@ const documentSearchSlice = createSlice({
       state.selectedDocumentId = null;
       state.currentPage = 1;
       state.searchError = null;
+      state.totalResults = 0;
+      state.lastSearchTime = null;
     },
   },
 
