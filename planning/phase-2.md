@@ -84,13 +84,79 @@ export interface DocumentSearchService {
   clearCache(): void;
 }
 
-class DocumentSearchServiceImpl implements DocumentSearchService {
-  private keywordsCache: string[] | null = null;
-  private keywordFilesCache = new Map<string, string[]>();
-  private documentsCache = new Map<string, SearchableDocument>();
+interface DocumentSearchState {
+  keywordsCache: string[] | null;
+  keywordFilesCache: Map<string, string[]>;
+  documentsCache: Map<string, SearchableDocument>;
+}
 
-  async loadKeywords(): Promise<string[]> {
-    if (this.keywordsCache) return this.keywordsCache;
+function createDocumentSearchState(): DocumentSearchState {
+  return {
+    keywordsCache: null,
+    keywordFilesCache: new Map<string, string[]>(),
+    documentsCache: new Map<string, SearchableDocument>()
+  };
+}
+
+function parseDocumentId(documentId: string): { caseId: number; documentNumber: string; attachmentNumber: number } {
+  const parts = documentId.split('-');
+  if (parts.length !== 3) {
+    throw new Error(`Invalid document ID format: ${documentId}`);
+  }
+  
+  return {
+    caseId: parseInt(parts[0], 10),
+    documentNumber: parts[1],
+    attachmentNumber: parseInt(parts[2], 10)
+  };
+}
+
+async function fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDocument[]> {
+  // Group document IDs by case ID for efficient loading
+  const caseGroups = new Map<number, string[]>();
+  
+  for (const id of documentIds) {
+    const { caseId } = parseDocumentId(id);
+    if (!caseGroups.has(caseId)) {
+      caseGroups.set(caseId, []);
+    }
+    caseGroups.get(caseId)!.push(id);
+  }
+
+  const results: SearchableDocument[] = [];
+
+  // Load documents by case - we'll need to integrate with dataService here
+  // For now, return mock data for independence
+  for (const [caseId, docIds] of caseGroups.entries()) {
+    for (const docId of docIds) {
+      const { documentNumber, attachmentNumber } = parseDocumentId(docId);
+      
+      // TODO: In real implementation, integrate with dataService.loadCaseDocuments
+      // For testing purposes, create mock documents
+      results.push({
+        id: docId,
+        caseId,
+        documentNumber,
+        attachmentNumber,
+        description: `Mock document for ${docId}`,
+        caseName: `Mock Case ${caseId}`,
+        court: 'cacd',
+        dateCreated: new Date().toISOString(),
+        filePath: `${caseId}/${documentNumber}-${attachmentNumber}.pdf`,
+        pageCount: 10,
+        fileSize: 1024 * 1024
+      });
+    }
+  }
+
+  return results;
+}
+
+export function createDocumentSearchService(): DocumentSearchService {
+  const state = createDocumentSearchState();
+
+  const loadKeywords = async (): Promise<string[]> => {
+    if (state.keywordsCache) return state.keywordsCache;
 
     const response = await fetch('/data/document-search/keywords.json');
     if (!response.ok) {
@@ -98,35 +164,35 @@ class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     const data = await response.json() as DocumentSearchKeywords;
-    this.keywordsCache = data.keywords;
+    state.keywordsCache = data.keywords;
     return data.keywords;
-  }
+  };
 
-  async searchByKeyword(keyword: string): Promise<string[]> {
-    if (this.keywordFilesCache.has(keyword)) {
-      return this.keywordFilesCache.get(keyword)!;
+  const searchByKeyword = async (keyword: string): Promise<string[]> => {
+    if (state.keywordFilesCache.has(keyword)) {
+      return state.keywordFilesCache.get(keyword)!;
     }
 
     const response = await fetch(`/data/document-search/keywords/${keyword}.json`);
     if (!response.ok) {
       if (response.status === 404) {
-        this.keywordFilesCache.set(keyword, []);
+        state.keywordFilesCache.set(keyword, []);
         return [];
       }
       throw new Error(`Failed to load keyword '${keyword}': ${response.statusText}`);
     }
 
     const data = await response.json() as DocumentSearchResult;
-    this.keywordFilesCache.set(keyword, data.documentIds);
+    state.keywordFilesCache.set(keyword, data.documentIds);
     return data.documentIds;
-  }
+  };
 
-  async searchByMultipleKeywords(keywords: string[], operator: 'AND' | 'OR' = 'OR'): Promise<string[]> {
+  const searchByMultipleKeywords = async (keywords: string[], operator: 'AND' | 'OR' = 'OR'): Promise<string[]> => {
     if (keywords.length === 0) return [];
-    if (keywords.length === 1) return this.searchByKeyword(keywords[0]);
+    if (keywords.length === 1) return searchByKeyword(keywords[0]);
 
     const results = await Promise.all(
-      keywords.map(keyword => this.searchByKeyword(keyword))
+      keywords.map(keyword => searchByKeyword(keyword))
     );
 
     if (operator === 'AND') {
@@ -140,16 +206,16 @@ class DocumentSearchServiceImpl implements DocumentSearchService {
       results.forEach(result => result.forEach(id => unionSet.add(id)));
       return Array.from(unionSet);
     }
-  }
+  };
 
-  async resolveDocuments(documentIds: string[]): Promise<SearchableDocument[]> {
+  const resolveDocuments = async (documentIds: string[]): Promise<SearchableDocument[]> => {
     const resolved: SearchableDocument[] = [];
     const toFetch: string[] = [];
 
     // Check cache for already resolved documents
     for (const id of documentIds) {
-      if (this.documentsCache.has(id)) {
-        resolved.push(this.documentsCache.get(id)!);
+      if (state.documentsCache.has(id)) {
+        resolved.push(state.documentsCache.get(id)!);
       } else {
         toFetch.push(id);
       }
@@ -157,84 +223,29 @@ class DocumentSearchServiceImpl implements DocumentSearchService {
 
     // Fetch missing documents
     if (toFetch.length > 0) {
-      const newlyResolved = await this._fetchDocumentsByIds(toFetch);
+      const newlyResolved = await fetchDocumentsByIds(toFetch);
       for (const doc of newlyResolved) {
-        this.documentsCache.set(doc.id, doc);
+        state.documentsCache.set(doc.id, doc);
         resolved.push(doc);
       }
     }
 
     return resolved;
-  }
+  };
 
-  private async _fetchDocumentsByIds(documentIds: string[]): Promise<SearchableDocument[]> {
-    // Group document IDs by case ID for efficient loading
-    const caseGroups = new Map<number, string[]>();
-    
-    for (const id of documentIds) {
-      const { caseId } = this._parseDocumentId(id);
-      if (!caseGroups.has(caseId)) {
-        caseGroups.set(caseId, []);
-      }
-      caseGroups.get(caseId)!.push(id);
-    }
+  const clearCache = (): void => {
+    state.keywordsCache = null;
+    state.keywordFilesCache.clear();
+    state.documentsCache.clear();
+  };
 
-    const results: SearchableDocument[] = [];
-
-    // Load documents by case - we'll need to integrate with dataService here
-    // For now, return mock data for independence
-    for (const [caseId, docIds] of caseGroups.entries()) {
-      for (const docId of docIds) {
-        const { documentNumber, attachmentNumber } = this._parseDocumentId(docId);
-        
-        // TODO: In real implementation, integrate with dataService.loadCaseDocuments
-        // For testing purposes, create mock documents
-        results.push({
-          id: docId,
-          caseId,
-          documentNumber,
-          attachmentNumber,
-          description: `Mock document for ${docId}`,
-          caseName: `Mock Case ${caseId}`,
-          court: 'cacd',
-          dateCreated: new Date().toISOString(),
-          filePath: `${caseId}/${documentNumber}-${attachmentNumber}.pdf`,
-          pageCount: 10,
-          fileSize: 1024 * 1024
-        });
-      }
-    }
-
-    return results;
-  }
-
-  private _parseDocumentId(documentId: string): { caseId: number; documentNumber: string; attachmentNumber: number } {
-    const parts = documentId.split('-');
-    if (parts.length !== 3) {
-      throw new Error(`Invalid document ID format: ${documentId}`);
-    }
-    
-    return {
-      caseId: parseInt(parts[0], 10),
-      documentNumber: parts[1],
-      attachmentNumber: parseInt(parts[2], 10)
-    };
-  }
-
-  clearCache(): void {
-    this.keywordsCache = null;
-    this.keywordFilesCache.clear();
-    this.documentsCache.clear();
-  }
-}
-
-export function createDocumentSearchService(): DocumentSearchService {
-  return new DocumentSearchServiceImpl();
-}
-
-// Factory function for dependency injection
-export function createDocumentSearchService(): DocumentSearchService {
-  return new DocumentSearchServiceImpl();
+  return {
+    loadKeywords,
+    searchByKeyword,
+    searchByMultipleKeywords,
+    resolveDocuments,
+    clearCache
+  };
 }
 
 // Default instance for convenience
@@ -462,46 +473,46 @@ Create `public/tests/test-document-search-service.html`:
     </div>
 
     <script type="module">
-        // Mock document search service for testing
-        class TestDocumentSearchService {
-            constructor() {
-                this.keywordsCache = null;
-                this.keywordFilesCache = new Map();
-            }
+        // Mock document search service factory for testing
+        function createTestDocumentSearchService() {
+            const state = {
+                keywordsCache: null,
+                keywordFilesCache: new Map()
+            };
 
-            async loadKeywords() {
-                if (this.keywordsCache) return this.keywordsCache;
+            const loadKeywords = async () => {
+                if (state.keywordsCache) return state.keywordsCache;
 
                 const response = await fetch('/data/document-search/keywords.json');
                 if (!response.ok) throw new Error(`Failed to load keywords: ${response.statusText}`);
 
                 const data = await response.json();
-                this.keywordsCache = data.keywords;
+                state.keywordsCache = data.keywords;
                 return data.keywords;
-            }
+            };
 
-            async searchByKeyword(keyword) {
-                if (this.keywordFilesCache.has(keyword)) {
-                    return this.keywordFilesCache.get(keyword);
+            const searchByKeyword = async (keyword) => {
+                if (state.keywordFilesCache.has(keyword)) {
+                    return state.keywordFilesCache.get(keyword);
                 }
 
                 const response = await fetch(`/data/document-search/keywords/${keyword}.json`);
                 if (!response.ok) {
                     if (response.status === 404) {
-                        this.keywordFilesCache.set(keyword, []);
+                        state.keywordFilesCache.set(keyword, []);
                         return [];
                     }
                     throw new Error(`Failed to load keyword '${keyword}': ${response.statusText}`);
                 }
 
                 const data = await response.json();
-                this.keywordFilesCache.set(keyword, data.documentIds);
+                state.keywordFilesCache.set(keyword, data.documentIds);
                 return data.documentIds;
-            }
+            };
 
-            async searchByMultipleKeywords(keywords, operator = 'OR') {
+            const searchByMultipleKeywords = async (keywords, operator = 'OR') => {
                 const results = await Promise.all(
-                    keywords.map(keyword => this.searchByKeyword(keyword))
+                    keywords.map(keyword => searchByKeyword(keyword))
                 );
 
                 if (operator === 'AND') {
@@ -513,10 +524,16 @@ Create `public/tests/test-document-search-service.html`:
                     results.forEach(result => result.forEach(id => unionSet.add(id)));
                     return Array.from(unionSet);
                 }
-            }
+            };
+
+            return {
+                loadKeywords,
+                searchByKeyword,
+                searchByMultipleKeywords
+            };
         }
 
-        const service = new TestDocumentSearchService();
+        const service = createTestDocumentSearchService();
 
         window.testLoadKeywords = async function() {
             const resultDiv = document.getElementById('keywords-result');
