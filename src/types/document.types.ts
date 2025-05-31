@@ -10,12 +10,12 @@ export interface Document {
   fileSize: number | null;
   filePath: string | null;
   sha1: string;
-  
+
   // Case context fields
   caseId: number;
   caseName: string;
   court: string;
-  
+
   // Search index fields
   searchId: string; // "caseId-docNum-attachNum" format
 }

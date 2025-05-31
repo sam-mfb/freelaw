@@ -70,11 +70,11 @@ async function fetchDocumentsByIds(documentIds: string[]): Promise<Document[]> {
   // Load documents by case
   for (const [caseId, docIds] of caseGroups.entries()) {
     const caseDocuments = await dataService.loadCaseDocuments(caseId);
-    
+
     for (const docId of docIds) {
       // Find the matching document by searchId
-      const doc = caseDocuments.find(d => d.searchId === docId);
-      
+      const doc = caseDocuments.find((d) => d.searchId === docId);
+
       if (doc) {
         results.push(doc);
       }

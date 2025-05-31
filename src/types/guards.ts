@@ -30,7 +30,9 @@ export function isRawRecapDocument(obj: unknown): obj is RawRecapDocument {
       typeof doc.page_count === 'number') &&
     (doc.file_size === undefined || doc.file_size === null || typeof doc.file_size === 'number') &&
     (doc.sha1 === undefined || doc.sha1 === null || typeof doc.sha1 === 'string') &&
-    (doc.attachment_number === undefined || doc.attachment_number === null || typeof doc.attachment_number === 'number')
+    (doc.attachment_number === undefined ||
+      doc.attachment_number === null ||
+      typeof doc.attachment_number === 'number')
   );
 }
 

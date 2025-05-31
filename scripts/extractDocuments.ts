@@ -20,9 +20,9 @@ export function extractDocuments(caseData: RawCaseData, context?: CaseContext): 
             const searchId = createDocumentId(
               context?.caseId || caseData.id,
               doc.document_number,
-              attachmentNumber ?? 'null'
+              attachmentNumber ?? 'null',
             );
-            
+
             documents.push({
               id: doc.id,
               entryNumber: entry.id,

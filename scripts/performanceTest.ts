@@ -1,20 +1,20 @@
 /**
  * Performance Testing Script for Document Search Index Building
- * 
+ *
  * This script measures the performance and memory usage of the document search
  * index building process. It processes the sample data in the same way as the
  * production buildIndex.ts script, providing accurate measurements for:
- * 
+ *
  * - Processing time for each phase (file reading, parsing, extraction, writing)
  * - Memory usage (peak and final)
  * - Index sizes (case index, documents, keyword index)
  * - Extrapolation to full dataset (34,000 cases)
- * 
+ *
  * The script uses a streaming approach that mirrors the production implementation:
  * - Processes one case file at a time
  * - Writes document files immediately after processing
  * - Only keeps the keyword index in memory throughout
- * 
+ *
  * Usage: npm run test:performance
  */
 
@@ -376,14 +376,14 @@ async function runPerformanceTest() {
     // The keyword index uses Map<string, Set<string>> which is more memory-efficient than JSON
     // Estimate 1.3x the serialized size for in-memory structures (Map/Set overhead)
     const keywordIndexMemory = (metrics.keywordIndexSize / metrics.caseCount) * 34000 * 1.3;
-    
+
     // Case summaries are kept in an array, similar size to serialized
     const caseSummariesMemory = (metrics.caseIndexSize / metrics.caseCount) * 34000;
-    
+
     // Working memory: one case file + its documents at a time
     const avgCaseFileSize = metrics.documentFilesSize / metrics.caseCount;
     const workingMemory = avgCaseFileSize * 10; // Buffer for ~10 case files worth of working data
-    
+
     const totalEstimatedMemory = keywordIndexMemory + caseSummariesMemory + workingMemory;
 
     console.log(`\nDetailed Memory Breakdown:`);
@@ -408,4 +408,3 @@ async function runPerformanceTest() {
 
 // Run the test
 runPerformanceTest();
-
