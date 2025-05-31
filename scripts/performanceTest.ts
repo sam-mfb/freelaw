@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { performance } from 'perf_hooks';
 import { extractKeywords, createDocumentId } from './extractKeywords';
-import type { Case } from '../src/types/case.types';
+import type { RawCaseData } from '../src/types/index.types';
 
 interface PerformanceMetrics {
   totalTime: number;
@@ -52,7 +52,7 @@ async function measureIndexBuildPerformance(dataDir: string): Promise<Performanc
 
   // Step 2: Parse JSON
   const parseStartTime = performance.now();
-  const cases: Case[] = [];
+  const cases: RawCaseData[] = [];
   for (const content of fileContents) {
     cases.push(JSON.parse(content));
   }
@@ -60,45 +60,56 @@ async function measureIndexBuildPerformance(dataDir: string): Promise<Performanc
 
   // Step 3: Extract keywords and build index
   const keywordStartTime = performance.now();
-  const documentSearchIndex: Record<string, Array<{ documentId: string; description: string }>> = {};
+  const keywordIndex = new Map<string, Set<string>>();
   let documentCount = 0;
 
   for (const caseData of cases) {
-    if (!caseData.docket_entries) continue;
+    const entries = (caseData as any).docket_entries;
+    if (!entries) continue;
     
-    for (const entry of caseData.docket_entries) {
-      documentCount++;
-      const description = entry.description || '';
-      const keywords = extractKeywords(description);
+    for (const entry of entries) {
+      if (!entry.recap_documents) continue;
       
-      const documentId = createDocumentId(
-        caseData.id,
-        entry.document_number ?? '0',
-        entry.recap_documents?.[0]?.attachment_number ?? 'null'
-      );
-      
-      for (const keyword of keywords) {
-        if (!documentSearchIndex[keyword]) {
-          documentSearchIndex[keyword] = [];
+      for (const doc of entry.recap_documents) {
+        if (!doc.is_available || !doc.description) continue;
+        
+        documentCount++;
+        const keywords = extractKeywords(doc.description);
+        
+        const documentId = createDocumentId(
+          caseData.id,
+          doc.document_number ?? '0',
+          doc.attachment_number ?? 'null'
+        );
+        
+        for (const keyword of keywords) {
+          if (!keywordIndex.has(keyword)) {
+            keywordIndex.set(keyword, new Set());
+          }
+          keywordIndex.get(keyword)!.add(documentId);
         }
-        documentSearchIndex[keyword].push({ documentId, description });
       }
     }
   }
   
   metrics.documentCount = documentCount;
-  metrics.uniqueKeywordCount = Object.keys(documentSearchIndex).length;
+  metrics.uniqueKeywordCount = keywordIndex.size;
   metrics.keywordExtractionTime = performance.now() - keywordStartTime;
 
-  // Step 4: Build final index structure
+  // Step 4: Build final index structure (convert Sets to Arrays)
   const indexStartTime = performance.now();
+  const keywordFiles: Record<string, any> = {};
+  
+  for (const [keyword, documentIds] of keywordIndex.entries()) {
+    keywordFiles[keyword] = {
+      keyword,
+      documentIds: Array.from(documentIds).sort()
+    };
+  }
+  
   const finalIndex = {
-    keywords: documentSearchIndex,
-    metadata: {
-      totalDocuments: documentCount,
-      uniqueKeywords: metrics.uniqueKeywordCount,
-      buildDate: new Date().toISOString()
-    }
+    keywordsIndex: { keywords: Array.from(keywordIndex.keys()).sort() },
+    keywordFiles
   };
   metrics.indexBuildTime = performance.now() - indexStartTime;
 
