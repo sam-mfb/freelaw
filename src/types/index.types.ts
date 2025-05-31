@@ -25,6 +25,7 @@ export interface RawRecapDocument {
   filepath_local?: string;
   is_available: boolean;
   sha1?: string;
+  attachment_number?: number;
 }
 
 export interface RawDocketEntry {
