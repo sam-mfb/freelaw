@@ -1,10 +1,9 @@
 import type {
+  Document,
   DocumentSearchKeywords,
   DocumentSearchResult,
-  SearchableDocument,
 } from '../types/document.types';
 import { dataService } from './dataService';
-import type { Document } from '../types/document.types';
 
 export interface DocumentSearchService {
   loadKeywords(): Promise<string[]>;
@@ -24,7 +23,7 @@ function createDocumentSearchState(): DocumentSearchState {
   return {
     keywordsCache: null,
     keywordFilesCache: new Map<string, string[]>(),
-    documentsCache: new Map<string, SearchableDocument>(),
+    documentsCache: new Map<string, Document>(),
   };
 }
 

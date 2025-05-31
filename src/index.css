@@ -1,3 +1,6 @@
+/* Import Document Search styles */
+@import './components/DocumentSearch.css';
+
 * {
   box-sizing: border-box;
 }

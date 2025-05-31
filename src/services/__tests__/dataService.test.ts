@@ -1,9 +1,29 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { createDataService, dataService } from '../dataService';
+import type { Document } from '../../types/document.types';
 
 // Mock fetch for testing
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
+
+// Helper to create valid document mocks
+const createMockDocument = (overrides: Partial<Document> = {}): Document => ({
+  id: 1,
+  entryNumber: 1,
+  documentNumber: '1',
+  attachmentNumber: null,
+  description: 'Test Document',
+  dateFiled: '2023-01-01',
+  pageCount: 10,
+  fileSize: 1000,
+  filePath: '/path/to/doc.pdf',
+  sha1: 'abcd1234',
+  caseId: 123,
+  caseName: 'Test Case',
+  court: 'test-court',
+  searchId: '123-1-null',
+  ...overrides,
+});
 
 describe('DataService - Default Instance', () => {
   beforeEach(() => {
@@ -80,19 +100,7 @@ describe('DataService - Default Instance', () => {
   });
 
   test('loadCaseDocuments - success', async () => {
-    const mockDocs = [
-      {
-        id: 1,
-        entryNumber: 1,
-        documentNumber: '1',
-        description: 'Test Document',
-        dateFiled: '2023-01-01',
-        pageCount: 10,
-        fileSize: 1000,
-        filePath: '/path/to/doc.pdf',
-        sha1: 'abcd1234',
-      },
-    ];
+    const mockDocs = [createMockDocument()];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -105,19 +113,7 @@ describe('DataService - Default Instance', () => {
   });
 
   test('loadCaseDocuments - caches result', async () => {
-    const mockDocs = [
-      {
-        id: 1,
-        entryNumber: 1,
-        documentNumber: '1',
-        description: 'Test Document',
-        dateFiled: '2023-01-01',
-        pageCount: 10,
-        fileSize: 1000,
-        filePath: '/path/to/doc.pdf',
-        sha1: 'abcd1234',
-      },
-    ];
+    const mockDocs = [createMockDocument()];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -238,19 +234,7 @@ describe('DataService - Default Instance', () => {
 
   test('clearCache - clears all caches', async () => {
     const mockIndex = { cases: [], courts: [], dateRange: { min: '', max: '' } };
-    const mockDocs = [
-      {
-        id: 1,
-        entryNumber: 1,
-        documentNumber: '1',
-        description: 'Test',
-        dateFiled: '2023-01-01',
-        pageCount: 10,
-        fileSize: 1000,
-        filePath: '/path/to/doc.pdf',
-        sha1: 'abcd1234',
-      },
-    ];
+    const mockDocs = [createMockDocument()];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -368,19 +352,7 @@ describe('DataService - Factory Function', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1); // No additional fetch
 
     // Same test for documents
-    const mockDocs = [
-      {
-        id: 1,
-        entryNumber: 1,
-        documentNumber: '1',
-        description: 'Test',
-        dateFiled: '2023-01-01',
-        pageCount: 10,
-        fileSize: 1000,
-        filePath: '/path/to/doc.pdf',
-        sha1: 'abcd1234',
-      },
-    ];
+    const mockDocs = [createMockDocument()];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,

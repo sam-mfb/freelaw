@@ -7,7 +7,7 @@ import {
   setSearchOperator,
   clearDocumentSearchCache,
 } from '../documentSearchSlice';
-import type { SearchableDocument } from '../../types/document.types';
+import type { Document } from '../../types/document.types';
 import type { AppServices } from '../../services/types';
 
 describe('Document Search Integration', () => {
@@ -52,17 +52,24 @@ describe('Document Search Integration', () => {
             return Array.from(unionSet);
           }
         },
-        resolveDocuments: async (ids: string[]): Promise<SearchableDocument[]> => {
+        resolveDocuments: async (ids: string[]): Promise<Document[]> => {
           return ids.map((id) => {
             const [caseId, docNum, attachNum] = id.split('-');
             return {
-              id,
+              id: parseInt(caseId),
+              searchId: id,
               caseId: parseInt(caseId),
               documentNumber: docNum,
-              attachmentNumber: parseInt(attachNum),
+              attachmentNumber: attachNum === 'null' ? null : parseInt(attachNum),
               description: `Mock document for ${id}`,
               caseName: `Mock Case ${caseId}`,
               court: 'cacd',
+              entryNumber: parseInt(docNum),
+              dateFiled: '2023-01-01',
+              pageCount: 10,
+              fileSize: 1024,
+              filePath: null,
+              sha1: 'mock-sha1',
             };
           });
         },
@@ -119,7 +126,8 @@ describe('Document Search Integration', () => {
 
     const state = store.getState().documentSearch;
     expect(state.searchResults).toHaveLength(1); // Intersection: only 100877-1-0
-    expect(state.searchResults[0].id).toBe('100877-1-0');
+    expect(state.searchResults[0].searchId).toBe('100877-1-0');
+    expect(state.searchResults[0].id).toBe(100877);
   });
 
   it('handles empty search results', async () => {
@@ -153,7 +161,8 @@ describe('Document Search Integration', () => {
     const firstResult = state.searchResults[0];
 
     expect(firstResult).toMatchObject({
-      id: '100877-1-0',
+      id: 100877,
+      searchId: '100877-1-0',
       caseId: 100877,
       documentNumber: '1',
       attachmentNumber: 0,

@@ -9,3 +9,4 @@ const services: AppServices = {
 };
 
 export const store = createAppStore(services);
+export { createAppStore };
