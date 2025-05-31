@@ -5,27 +5,25 @@ import { CaseList } from './CaseList';
 import { DocumentView } from './DocumentView';
 
 export const Layout: React.FC = () => {
-  const { selectedCaseId } = useAppSelector(state => state.cases);
-  
+  const { selectedCaseId } = useAppSelector((state) => state.cases);
+
   return (
     <div className="app-layout">
       <header className="app-header">
         <h1>Legal Document Browser</h1>
       </header>
-      
+
       <div className="app-body">
         <aside className="sidebar">
           <CaseSearch />
           <CaseList />
         </aside>
-        
+
         <main className="main-content">
           {selectedCaseId ? (
             <DocumentView caseId={selectedCaseId} />
           ) : (
-            <div className="no-selection">
-              Select a case to view documents
-            </div>
+            <div className="no-selection">Select a case to view documents</div>
           )}
         </main>
       </div>
