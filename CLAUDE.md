@@ -55,3 +55,34 @@ npm run build            # Production build
 npm run build:index:sample # Build search indices from sample data
 ```
 
+## GitHub PR Review Comments
+
+When asked to review Copilot or other comments on a PR, use these methods:
+
+```bash
+# 1. Get all comments (high-level review comments)
+gh pr view <PR_NUMBER> --comments
+
+# 2. Get review details in JSON format
+gh pr view <PR_NUMBER> --json reviews
+
+# 3. Get inline code review comments via API
+gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments
+
+# Example for this repo:
+gh pr view 11 --comments
+gh pr view 11 --json reviews
+gh api repos/sam-mfb/freelaw/pulls/11/comments
+```
+
+### Understanding GitHub PR Comments Structure:
+- **Review Comments**: High-level comments on the entire PR (shown with `--comments`)
+- **Inline Comments**: Specific code line comments (retrieved via API)
+- **Review Summaries**: Overall review with all comments (shown in `--json reviews`)
+
+### Copilot Comments:
+- Author will be "copilot-pull-request-reviewer" 
+- May include confidence levels (e.g., "Comments suppressed due to low confidence")
+- Often provides suggestions as code blocks
+- Comments may be updated across multiple reviews as code changes
+
