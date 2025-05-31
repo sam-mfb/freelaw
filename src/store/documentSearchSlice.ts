@@ -267,7 +267,7 @@ export const selectSearchState = (state: RootState): SearchStatus => ({
 export const selectSelectedDocument = (state: RootState): SearchableDocument | null => {
   const { selectedDocumentId, searchResults } = state.documentSearch;
   return selectedDocumentId
-    ? searchResults.find((doc: SearchableDocument) => doc.id === selectedDocumentId) || null
+    ? searchResults.find((doc: SearchableDocument) => doc.searchId === selectedDocumentId) || null
     : null;
 };
 

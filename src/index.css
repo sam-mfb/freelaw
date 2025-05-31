@@ -16,6 +16,9 @@ code {
     monospace;
 }
 
+/* Import Document Search styles */
+@import './components/DocumentSearch.css';
+
 /* App Layout */
 .app-layout {
   display: flex;

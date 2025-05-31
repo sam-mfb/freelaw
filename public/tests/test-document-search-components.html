@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document Search Components Test</title>
+    <link rel="stylesheet" href="../../src/components/DocumentSearch.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .component-demo { margin: 40px 0; padding: 20px; border: 1px solid #ccc; }
+        .demo-title { background: #f5f5f5; margin: -20px -20px 20px -20px; padding: 10px 20px; }
+    </style>
+</head>
+<body>
+    <h1>Document Search Components Visual Test</h1>
+    
+    <div class="component-demo">
+        <h2 class="demo-title">1. Keywords Input Component</h2>
+        <div class="document-search-keywords">
+            <div class="keyword-input-section">
+                <div class="keyword-input-wrapper">
+                    <input type="text" class="keyword-input" placeholder="Add keyword (e.g., motion, deposition)..." value="mot">
+                    <div class="keyword-suggestions">
+                        <button class="keyword-suggestion">motion</button>
+                        <button class="keyword-suggestion">mortgage</button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary">Add</button>
+            </div>
+            
+            <div class="selected-keywords">
+                <div class="keyword-tags">
+                    <span class="keyword-tag">
+                        motion
+                        <button class="keyword-remove">✕</button>
+                    </span>
+                    <span class="keyword-tag">
+                        summary
+                        <button class="keyword-remove">✕</button>
+                    </span>
+                </div>
+                
+                <div class="search-controls">
+                    <div class="operator-selector">
+                        <label>Match:</label>
+                        <select>
+                            <option>Any keyword (OR)</option>
+                            <option>All keywords (AND)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary search-button">Search Documents</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="component-demo">
+        <h2 class="demo-title">2. Search Results Component</h2>
+        <div class="document-search-results">
+            <div class="results-header">
+                <h3>25 documents found <span class="search-summary">for "motion OR summary"</span></h3>
+                <div class="results-controls">
+                    <label>Show:</label>
+                    <select>
+                        <option>10 per page</option>
+                        <option selected>20 per page</option>
+                        <option>50 per page</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="results-list">
+                <div class="document-result-card selected">
+                    <div class="document-header">
+                        <h4 class="document-title">
+                            <mark>Motion</mark> for <mark>Summary</mark> Judgment on Patent Claims
+                        </h4>
+                        <span class="document-id">100877-1-0</span>
+                    </div>
+                    <div class="document-meta">
+                        <span class="case-name">Apple Inc. v. Samsung Electronics Co.</span>
+                        <span class="court">CACD</span>
+                        <span class="date">2023-03-15</span>
+                    </div>
+                    <div class="document-details">
+                        <span>Doc #1</span>
+                        <span>45 pages</span>
+                        <span>2.3 MB</span>
+                    </div>
+                </div>
+                
+                <div class="document-result-card">
+                    <div class="document-header">
+                        <h4 class="document-title">
+                            Expert Deposition Transcript - Dr. Smith
+                        </h4>
+                        <span class="document-id">234561-5-0</span>
+                    </div>
+                    <div class="document-meta">
+                        <span class="case-name">Microsoft Corp. v. Google LLC</span>
+                        <span class="court">NYSD</span>
+                        <span class="date">2023-02-28</span>
+                    </div>
+                    <div class="document-details">
+                        <span>Doc #5</span>
+                        <span>156 pages</span>
+                        <span>8.7 MB</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="results-pagination">
+                <div class="pagination-info">
+                    Showing 1-20 of 25
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" disabled>⏮</button>
+                    <button class="pagination-btn" disabled>◀</button>
+                    <span class="pagination-current">Page 1 of 2</span>
+                    <button class="pagination-btn">▶</button>
+                    <button class="pagination-btn">⏭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="component-demo">
+        <h2 class="demo-title">3. Navigation Tabs</h2>
+        <header class="app-header">
+            <h1>Legal Document Browser</h1>
+            <nav class="main-navigation">
+                <button class="nav-tab">Browse Cases</button>
+                <button class="nav-tab active">Search Documents</button>
+            </nav>
+        </header>
+    </div>
+
+    <script>
+        // Add basic interactivity for demo purposes
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('keyword-suggestion')) {
+                e.target.parentElement.style.display = 'none';
+                document.querySelector('.keyword-input').value = e.target.textContent;
+            }
+            
+            if (e.target.classList.contains('document-result-card')) {
+                document.querySelectorAll('.document-result-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                e.target.classList.add('selected');
+            }
+            
+            if (e.target.classList.contains('nav-tab')) {
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                e.target.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
