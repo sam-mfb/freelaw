@@ -1,7 +1,7 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 
-interface UIState {
+export interface UIState {
   sidebarOpen: boolean;
   documentListView: 'grid' | 'list';
   sortBy: 'name' | 'date' | 'docCount';

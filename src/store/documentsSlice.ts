@@ -3,7 +3,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { Document } from '../types/document.types';
 import type { ThunkExtra } from './types';
 
-interface DocumentsState {
+export interface DocumentsState {
   documents: Record<number, Document[]>;
   currentDocuments: Document[];
   filteredDocuments: Document[];

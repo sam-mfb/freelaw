@@ -4,7 +4,7 @@ import type { CaseIndex } from '../types/index.types';
 import type { CaseSummary } from '../types/case.types';
 import type { ThunkExtra } from './types';
 
-interface CasesState {
+export interface CasesState {
   index: CaseIndex | null;
   filteredCases: CaseSummary[];
   selectedCaseId: number | null;
