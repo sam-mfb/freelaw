@@ -154,12 +154,45 @@ Common federal court codes found in the data:
 - Sequential processing: Iterate through docket-data directory
 - Batch operations: Process court-specific subdirectories
 
+## Development Data Workflow
+
+### Sample Data for Development
+The `sample-data/` directory provides a curated subset for development:
+
+```
+sample-data/                   # Development subset (10 cases)
+├── docket-data/              # 10 representative JSON files
+│   ├── 14560346.json        # Carefully selected for variety
+│   ├── 15992337.json        # Different courts and case types
+│   └── ...
+└── sata/recap/               # Sample PDF files  
+    └── gov.uscourts.kyed.88372/
+        ├── gov.uscourts.kyed.88372.1.0.pdf
+        └── ... (50+ PDF files)
+```
+
+### Application Data Processing
+1. **Index Building** (`npm run build:index:sample`):
+   - Processes sample JSON files into searchable indices
+   - Generates `public/data/case-index.json` for fast client-side search
+   - Creates `public/data/documents/[caseId].json` per case
+
+2. **Runtime Data Flow**:
+   - App loads case index on startup for instant searching
+   - Documents loaded on-demand when case selected
+   - PDFs accessed directly via `filepath_local` references
+
+### Benefits for Development
+- **Fast iteration**: 10 cases vs 34,418 in production
+- **Complete testing**: All application features work with sample data
+- **Identical structure**: Same JSON schema and PDF organization
+- **Reasonable size**: Manageable for version control and testing
+
 ## Related Documentation
 
 - `JSON_STRUCTURE_DOCUMENTATION.md` - Detailed JSON schema documentation
-- `ANALYSIS_SCRIPTS_DOCUMENTATION.md` - Python analysis tools documentation
-- `analyze_json.py` - Script for analyzing JSON structure
-- `detailed_analysis.py` - Script for detailed single-file analysis
+- `scripts/ANALYSIS_SCRIPTS_DOCUMENTATION.md` - Analysis tools documentation
+- `README.md` - Application setup and usage guide
 
 ## Data Source
 
