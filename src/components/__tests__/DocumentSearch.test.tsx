@@ -28,6 +28,8 @@ const createMockStore = (initialState = {}) => {
         resultsPerPage: 20,
         currentPage: 1,
         totalResults: 0,
+        sortBy: 'relevance' as const,
+        sortOrder: 'desc' as const,
         lastSearchTime: null,
         cacheSize: 0,
         ...initialState,

@@ -3,14 +3,19 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
   setCurrentPage,
   setResultsPerPage,
+  setSortBy,
+  setSortOrder,
   selectPaginatedResults,
   selectCurrentSearch,
+  selectSortingState,
 } from '../store/documentSearchSlice';
+import type { SortBy } from '../store/documentSearchSlice';
 import { getPdfPath } from '../constants/paths';
 
 export const DocumentSearchResults: React.FC = () => {
   const dispatch = useAppDispatch();
   const { keywords, operator } = useAppSelector(selectCurrentSearch);
+  const { sortBy, sortOrder } = useAppSelector(selectSortingState);
   const {
     results,
     totalResults,
@@ -27,6 +32,14 @@ export const DocumentSearchResults: React.FC = () => {
 
   const handlePageSizeChange = (size: number): void => {
     dispatch(setResultsPerPage(size));
+  };
+
+  const handleSortByChange = (newSortBy: SortBy): void => {
+    dispatch(setSortBy(newSortBy));
+  };
+
+  const handleSortOrderChange = (): void => {
+    dispatch(setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'));
   };
 
   const highlightKeywords = (text: string): string => {
@@ -47,16 +60,42 @@ export const DocumentSearchResults: React.FC = () => {
         </h3>
 
         <div className="results-controls">
-          <label htmlFor="results-per-page">Show:</label>
-          <select
-            id="results-per-page"
-            value={resultsPerPage}
-            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-          >
-            <option value={10}>10 per page</option>
-            <option value={20}>20 per page</option>
-            <option value={50}>50 per page</option>
-          </select>
+          <div className="sort-controls">
+            <label htmlFor="sort-by">Sort by:</label>
+            <select
+              id="sort-by"
+              value={sortBy}
+              onChange={(e) => handleSortByChange(e.target.value as SortBy)}
+              className="sort-select"
+            >
+              <option value="relevance">Relevance</option>
+              <option value="pageCount">Page Count</option>
+              <option value="dateFiled">Date Filed</option>
+              <option value="fileSize">File Size</option>
+              <option value="description">Description</option>
+            </select>
+            <button
+              onClick={handleSortOrderChange}
+              className="sort-order-btn"
+              aria-label={`Sort ${sortOrder === 'asc' ? 'ascending' : 'descending'}`}
+              title={`Currently sorting ${sortOrder === 'asc' ? 'ascending' : 'descending'}. Click to reverse.`}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+          
+          <div className="pagination-controls">
+            <label htmlFor="results-per-page">Show:</label>
+            <select
+              id="results-per-page"
+              value={resultsPerPage}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            >
+              <option value={10}>10 per page</option>
+              <option value={20}>20 per page</option>
+              <option value={50}>50 per page</option>
+            </select>
+          </div>
         </div>
       </div>
 

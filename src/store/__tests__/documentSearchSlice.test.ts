@@ -372,6 +372,8 @@ describe('documentSearchSlice', () => {
         resultsPerPage: 10,
         currentPage: 2,
         totalResults: 25,
+        sortBy: 'relevance' as const,
+        sortOrder: 'desc' as const,
         lastSearchTime: Date.now(),
         cacheSize: 3,
       },
