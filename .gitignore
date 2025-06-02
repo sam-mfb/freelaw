@@ -39,6 +39,7 @@ Thumbs.db
 
 # Generated index files
 public/data/
+public/sample-data/
 
 # Environment variables
 .env

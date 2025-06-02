@@ -4,6 +4,9 @@ import type { Document } from '../types/document.types';
 import type { ThunkExtra } from './types';
 import type { RootState } from './createAppStore';
 
+export type SortBy = 'relevance' | 'pageCount' | 'dateFiled' | 'fileSize' | 'description';
+export type SortOrder = 'asc' | 'desc';
+
 export interface DocumentSearchState {
   // Keywords state
   availableKeywords: string[];
@@ -28,6 +31,10 @@ export interface DocumentSearchState {
   currentPage: number;
   totalResults: number;
 
+  // Sorting
+  sortBy: SortBy;
+  sortOrder: SortOrder;
+
   // Cache metadata
   lastSearchTime: number | null;
   cacheSize: number;
@@ -51,6 +58,9 @@ const initialState: DocumentSearchState = {
   resultsPerPage: 20,
   currentPage: 1,
   totalResults: 0,
+
+  sortBy: 'relevance',
+  sortOrder: 'desc',
 
   lastSearchTime: null,
   cacheSize: 0,
@@ -153,6 +163,18 @@ const documentSearchSlice = createSlice({
       state.searchError = null;
       state.totalResults = 0;
       state.lastSearchTime = null;
+      state.sortBy = 'relevance';
+      state.sortOrder = 'desc';
+    },
+
+    setSortBy: (state, action: PayloadAction<SortBy>) => {
+      state.sortBy = action.payload;
+      state.currentPage = 1;
+    },
+
+    setSortOrder: (state, action: PayloadAction<SortOrder>) => {
+      state.sortOrder = action.payload;
+      state.currentPage = 1;
     },
   },
 
@@ -206,6 +228,8 @@ export const {
   setCurrentPage,
   setResultsPerPage,
   clearSearch,
+  setSortBy,
+  setSortOrder,
 } = documentSearchSlice.actions;
 
 // Selectors
@@ -224,6 +248,57 @@ export const selectCurrentSearch = createSelector(
 export const selectSearchResults = (state: RootState): Document[] =>
   state.documentSearch.searchResults;
 
+// Sorting selector
+export const selectSortedSearchResults = createSelector(
+  [(state: RootState) => state.documentSearch.searchResults,
+   (state: RootState) => state.documentSearch.sortBy,
+   (state: RootState) => state.documentSearch.sortOrder],
+  (searchResults, sortBy, sortOrder): Document[] => {
+    if (searchResults.length === 0) return searchResults;
+    
+    // For relevance sorting, maintain original order (already sorted by relevance from search)
+    if (sortBy === 'relevance') {
+      return sortOrder === 'desc' ? [...searchResults] : [...searchResults].reverse();
+    }
+
+    const sorted = [...searchResults].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'pageCount': {
+          // Handle null values - put them at the end regardless of sort order
+          if (a.pageCount === null && b.pageCount === null) return 0;
+          if (a.pageCount === null) return 1;
+          if (b.pageCount === null) return -1;
+          comparison = a.pageCount - b.pageCount;
+          break;
+        }
+        case 'dateFiled': {
+          // Assuming dateFiled is in ISO format or similar sortable string
+          comparison = a.dateFiled.localeCompare(b.dateFiled);
+          break;
+        }
+        case 'fileSize': {
+          // Handle null values - put them at the end regardless of sort order
+          if (a.fileSize === null && b.fileSize === null) return 0;
+          if (a.fileSize === null) return 1;
+          if (b.fileSize === null) return -1;
+          comparison = a.fileSize - b.fileSize;
+          break;
+        }
+        case 'description': {
+          comparison = a.description.localeCompare(b.description);
+          break;
+        }
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }
+);
+
 export interface PaginationResult {
   results: Document[];
   totalResults: number;
@@ -235,19 +310,20 @@ export interface PaginationResult {
 }
 
 export const selectPaginatedResults = createSelector(
-  [(state: RootState) => state.documentSearch],
-  (documentSearch): PaginationResult => {
-    const { searchResults, currentPage, resultsPerPage } = documentSearch;
+  [selectSortedSearchResults,
+   (state: RootState) => state.documentSearch.currentPage,
+   (state: RootState) => state.documentSearch.resultsPerPage],
+  (sortedResults, currentPage, resultsPerPage): PaginationResult => {
     const startIndex = (currentPage - 1) * resultsPerPage;
     const endIndex = startIndex + resultsPerPage;
 
     return {
-      results: searchResults.slice(startIndex, endIndex),
-      totalResults: searchResults.length,
+      results: sortedResults.slice(startIndex, endIndex),
+      totalResults: sortedResults.length,
       currentPage,
       resultsPerPage,
-      totalPages: Math.ceil(searchResults.length / resultsPerPage),
-      hasNextPage: endIndex < searchResults.length,
+      totalPages: Math.ceil(sortedResults.length / resultsPerPage),
+      hasNextPage: endIndex < sortedResults.length,
       hasPreviousPage: currentPage > 1,
     };
   }
@@ -270,12 +346,22 @@ export const selectSearchState = createSelector(
   }),
 );
 
-export const selectSelectedDocument = (state: RootState): Document | null => {
-  const { selectedDocumentId, searchResults } = state.documentSearch;
-  return selectedDocumentId
-    ? searchResults.find((doc: Document) => doc.searchId === selectedDocumentId) || null
-    : null;
-};
+export const selectSelectedDocument = createSelector(
+  [(state: RootState) => state.documentSearch.selectedDocumentId,
+   selectSortedSearchResults],
+  (selectedDocumentId, sortedResults): Document | null => {
+    return selectedDocumentId
+      ? sortedResults.find((doc: Document) => doc.searchId === selectedDocumentId) || null
+      : null;
+  }
+);
+
+// Sorting state selector
+export const selectSortingState = createSelector(
+  [(state: RootState) => state.documentSearch.sortBy,
+   (state: RootState) => state.documentSearch.sortOrder],
+  (sortBy, sortOrder) => ({ sortBy, sortOrder })
+);
 
 // Memoized selectors
 export const selectKeywordSuggestions = createSelector(

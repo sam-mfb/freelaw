@@ -114,9 +114,13 @@ async function main() {
     }
   }
 
+  // Determine output directory based on data source
+  const isSampleData = dataDir.includes('sample-data');
+  const outputDir = isSampleData ? './public/sample-data' : './public/data';
+
   const config: BuildConfig = {
     jsonDir: path.join(dataDir, 'docket-data'),
-    outputDir: './public/data',
+    outputDir,
     pdfBaseDir: path.join(dataDir, 'sata'),
   };
 
