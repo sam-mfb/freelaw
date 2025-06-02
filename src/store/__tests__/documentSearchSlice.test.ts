@@ -18,6 +18,9 @@ import documentSearchReducer, {
   selectSearchState,
   selectKeywordSuggestions,
   selectSearchStats,
+  selectSortedSearchResults,
+  setSortBy,
+  setSortOrder,
 } from '../documentSearchSlice';
 import type { Document } from '../../types/document.types';
 import type { ThunkDispatch } from '@reduxjs/toolkit';
@@ -199,6 +202,30 @@ describe('documentSearchSlice', () => {
       expect(state.selectedDocumentId).toBe(null);
       expect(state.currentPage).toBe(1);
       expect(state.searchError).toBe(null);
+      expect(state.sortBy).toBe('relevance');
+      expect(state.sortOrder).toBe('desc');
+    });
+
+    it('sets sort by and resets to first page', () => {
+      const store = createTestStore();
+
+      store.dispatch(setCurrentPage(3));
+      store.dispatch(setSortBy('pageCount'));
+
+      const state = store.getState().documentSearch;
+      expect(state.sortBy).toBe('pageCount');
+      expect(state.currentPage).toBe(1);
+    });
+
+    it('sets sort order and resets to first page', () => {
+      const store = createTestStore();
+
+      store.dispatch(setCurrentPage(3));
+      store.dispatch(setSortOrder('asc'));
+
+      const state = store.getState().documentSearch;
+      expect(state.sortOrder).toBe('asc');
+      expect(state.currentPage).toBe(1);
     });
   });
 
@@ -443,6 +470,158 @@ describe('documentSearchSlice', () => {
       expect(result.resultsFound).toBe(25);
       expect(result.cacheSize).toBe(3);
       expect(result.lastSearch).toBeInstanceOf(Date);
+    });
+
+    describe('selectSortedSearchResults', () => {
+      it('sorts by relevance (original order) in descending order', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            sortBy: 'relevance' as const,
+            sortOrder: 'desc' as const,
+            searchResults: [
+              createMockDocument({ id: 1, searchId: '1-1-0' }),
+              createMockDocument({ id: 2, searchId: '2-1-0' }),
+              createMockDocument({ id: 3, searchId: '3-1-0' }),
+            ],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result.map(d => d.id)).toEqual([1, 2, 3]);
+      });
+
+      it('sorts by relevance (original order) in ascending order (reverses)', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            sortBy: 'relevance' as const,
+            sortOrder: 'asc' as const,
+            searchResults: [
+              createMockDocument({ id: 1, searchId: '1-1-0' }),
+              createMockDocument({ id: 2, searchId: '2-1-0' }),
+              createMockDocument({ id: 3, searchId: '3-1-0' }),
+            ],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result.map(d => d.id)).toEqual([3, 2, 1]);
+      });
+
+      it('sorts by page count ascending with null values at end', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            sortBy: 'pageCount' as const,
+            sortOrder: 'asc' as const,
+            searchResults: [
+              createMockDocument({ id: 1, pageCount: 20 }),
+              createMockDocument({ id: 2, pageCount: null }),
+              createMockDocument({ id: 3, pageCount: 10 }),
+              createMockDocument({ id: 4, pageCount: 5 }),
+              createMockDocument({ id: 5, pageCount: null }),
+            ],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result.map(d => d.id)).toEqual([4, 3, 1, 2, 5]);
+      });
+
+      it('sorts by page count descending with null values at end', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            sortBy: 'pageCount' as const,
+            sortOrder: 'desc' as const,
+            searchResults: [
+              createMockDocument({ id: 1, pageCount: 20 }),
+              createMockDocument({ id: 2, pageCount: null }),
+              createMockDocument({ id: 3, pageCount: 10 }),
+              createMockDocument({ id: 4, pageCount: 5 }),
+            ],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result.map(d => d.id)).toEqual([1, 3, 4, 2]);
+      });
+
+      it('sorts by date filed ascending', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            sortBy: 'dateFiled' as const,
+            sortOrder: 'asc' as const,
+            searchResults: [
+              createMockDocument({ id: 1, dateFiled: '2023-03-15' }),
+              createMockDocument({ id: 2, dateFiled: '2023-01-01' }),
+              createMockDocument({ id: 3, dateFiled: '2023-06-30' }),
+            ],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result.map(d => d.id)).toEqual([2, 1, 3]);
+      });
+
+      it('sorts by file size with null values at end', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            sortBy: 'fileSize' as const,
+            sortOrder: 'asc' as const,
+            searchResults: [
+              createMockDocument({ id: 1, fileSize: 5000 }),
+              createMockDocument({ id: 2, fileSize: null }),
+              createMockDocument({ id: 3, fileSize: 1000 }),
+              createMockDocument({ id: 4, fileSize: 3000 }),
+            ],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result.map(d => d.id)).toEqual([3, 4, 1, 2]);
+      });
+
+      it('sorts by description alphabetically', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            sortBy: 'description' as const,
+            sortOrder: 'asc' as const,
+            searchResults: [
+              createMockDocument({ id: 1, description: 'Motion to Dismiss' }),
+              createMockDocument({ id: 2, description: 'Answer' }),
+              createMockDocument({ id: 3, description: 'Complaint' }),
+            ],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result.map(d => d.id)).toEqual([2, 3, 1]);
+      });
+
+      it('returns empty array when no search results', () => {
+        const state = {
+          ...mockState,
+          documentSearch: {
+            ...mockState.documentSearch,
+            searchResults: [],
+          },
+        };
+
+        const result = selectSortedSearchResults(state);
+        expect(result).toEqual([]);
+      });
     });
   });
 });
