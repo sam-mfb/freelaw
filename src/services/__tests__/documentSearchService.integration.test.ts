@@ -8,7 +8,7 @@ import { join } from 'path';
 const mockFetch = vi.fn().mockImplementation(async (url: string) => {
   // Convert URL to filesystem path
   const filePath = join(process.cwd(), 'public', url);
-  
+
   if (!existsSync(filePath)) {
     return {
       ok: false,
@@ -16,7 +16,7 @@ const mockFetch = vi.fn().mockImplementation(async (url: string) => {
       status: 404,
     };
   }
-  
+
   try {
     const content = readFileSync(filePath, 'utf-8');
     return {
@@ -35,9 +35,6 @@ const mockFetch = vi.fn().mockImplementation(async (url: string) => {
 });
 
 global.fetch = mockFetch;
-
-// Use the real dataService - it will use our mocked fetch
-import { dataService } from '../dataService';
 
 describe('DocumentSearchService Integration', () => {
   let service: DocumentSearchService;
@@ -67,7 +64,7 @@ describe('DocumentSearchService Integration', () => {
 
       // Verify document structure
       expect(documents).toHaveLength(documentsToResolve.length);
-      
+
       documents.forEach((doc) => {
         expect(doc).toHaveProperty('id');
         expect(doc).toHaveProperty('caseId');
@@ -76,7 +73,7 @@ describe('DocumentSearchService Integration', () => {
         expect(doc).toHaveProperty('description');
         expect(doc).toHaveProperty('caseName');
         expect(doc).toHaveProperty('court');
-        
+
         // Verify it's real data - descriptions should be meaningful
         expect(doc.description.length).toBeGreaterThan(5);
         expect(doc.caseName.length).toBeGreaterThan(5);
@@ -110,14 +107,10 @@ describe('DocumentSearchService Integration', () => {
     const testKeyword = keywords[0];
 
     // First call - will hit network/file system
-    const start1 = performance.now();
     const results1 = await service.searchByKeyword(testKeyword);
-    const time1 = performance.now() - start1;
 
     // Second call - should hit cache
-    const start2 = performance.now();
     const results2 = await service.searchByKeyword(testKeyword);
-    const time2 = performance.now() - start2;
 
     // Results should be identical
     expect(results1).toEqual(results2);
@@ -131,11 +124,11 @@ describe('DocumentSearchService Integration', () => {
     // Test the document resolution with actual document IDs from our sample data
     // Let's use IDs we know exist in the sample data
     const keywords = await service.loadKeywords();
-    
+
     // Get some actual document IDs from keyword search
     const sampleKeyword = keywords[0];
     const sampleIds = await service.searchByKeyword(sampleKeyword);
-    
+
     if (sampleIds.length > 0) {
       // Take up to 3 document IDs to test
       const testIds = sampleIds.slice(0, Math.min(3, sampleIds.length));
@@ -150,7 +143,7 @@ describe('DocumentSearchService Integration', () => {
         expect(doc).toHaveProperty('documentNumber');
         expect(doc).toHaveProperty('attachmentNumber');
         expect(doc).toHaveProperty('description');
-        
+
         // Verify the searchId format matches the document properties
         const parts = doc.searchId.split('-');
         expect(doc.caseId).toBe(parseInt(parts[0]));

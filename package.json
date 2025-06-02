@@ -12,7 +12,7 @@
     "build:index:sample": "vite-node scripts/buildIndex.ts --data-dir=./sample-data",
     "build:document-search": "vite-node scripts/buildDocumentSearchIndex.ts --data-dir=./data",
     "build:document-search:sample": "vite-node scripts/buildDocumentSearchIndex.ts --data-dir=./sample-data",
-    "preview": "vite preview",
+    "preview": "vite preview --port 3000 --host 0.0.0.0",
     "lint": "eslint src scripts --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
     "typecheck": "tsc --noEmit",
